@@ -1,46 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion, Variants } from 'framer-motion';
 
-// Define time-based greeting messages
-const getGreetingMessage = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return 'Good morning!';
-  } else if (hour < 17) {
-    return 'Good afternoon!';
-  } else if (hour < 20) {
-    return 'Good evening!';
-  } else {
-    return 'Good night!';
-  }
-};
-
-// Variants for Framer Motion animations
-const containerVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { 
-    y: 0, 
-    opacity: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 300,
-      damping: 20
-    }
-  }
-};
-
-const buttonVariants: Variants = {
-  hidden: { scale: 0 },
-  visible: { 
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 260,
-      damping: 20
-    }
-  }
-};
-
+/**
+ * A desktop widget that displays a greeting message and provides access to the AI assistant.
+ * It includes buttons to start a chat, voice interaction, and settings.
+ */
 const DesktopWidget: React.FC = () => {
   const [greeting, setGreeting] = useState(getGreetingMessage());
   const [isVisible, setIsVisible] = useState(false);
@@ -109,5 +73,15 @@ const DesktopWidget: React.FC = () => {
     </motion.div>
   );
 };
+
+/**
+ * Props for the DesktopWidget component.
+ */
+interface DesktopWidgetProps {
+  /**
+   * Whether the widget is currently visible.
+   */
+  isVisible: boolean;
+}
 
 export default DesktopWidget;
