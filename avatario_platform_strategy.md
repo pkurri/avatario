@@ -1,6 +1,6 @@
 # AI Human Assistant: Industry-Agnostic Strategy
 
-**Project:** `vakeels.ai.lawyer` → Multi-Industry AI Human Platform
+**Project:** `avatario` → Multi-Industry AI Human Platform
 **Date:** May 2026
 **Status:** Strategy & Architecture Design
 
@@ -188,7 +188,7 @@ version: "2.0"
 
 industries:
   legal:
-    app_name: "Vakeels AI"
+    app_name: "Avatario"
     rag_index: legal_knowledge_base
     default_language: auto
     

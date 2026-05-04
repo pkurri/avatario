@@ -1,4 +1,4 @@
-# Vakeels AI Lawyer: LiveKit Voice Agent Architecture
+# Avatario Platform: LiveKit Voice Agent Architecture
 
 This document describes the target architecture for migrating our custom WebSocket-based Voice UI to a robust, enterprise-grade WebRTC Voice Agent using **LiveKit** and **Sarvam AI**.
 
@@ -35,13 +35,13 @@ We will instantiate a `VoiceAgent` that connects STT, LLM, and TTS seamlessly:
 
 ## 3. Frontend Architecture
 
-### Next.js Web (`vakeels.ai.lawyer-web`)
+### Next.js Web (`avatario-web`)
 
 - **SDK:** `@livekit/components-react`
 - Replace `useVoiceChat.ts` with the official `<LiveKitRoom />` provider.
 - Use the `useVoiceAssistant` hook to automatically tie the avatar pulsing CSS to the LiveKit audio track's volume level.
 
-### React Native App (`vakeels.ai.lawyer-app`)
+### React Native App (`avatario-app`)
 
 - **SDK:** `@livekit/react-native` and `@livekit/react-native-expo`
 - Connect to the identical LiveKit Room URL.
