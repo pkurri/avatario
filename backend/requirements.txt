@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+langchain
+langgraph
+langchain-community
+pydantic
+python-dotenv
+websockets
+# Dependencies for Sarvam API (requests/httpx)
+httpx
+langchain-openai
+python-multipart
