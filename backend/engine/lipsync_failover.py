@@ -1,10 +1,11 @@
 # backend/engine/lipsync_failover.py
 """
-Lip Sync Failover Chain: Mac Local → NVIDIA Audio2Face → D-ID
+Lip Sync Failover Chain: Mac Local → NVIDIA Audio2Face → D-ID → Duix.Avatar
 
 Tier 1: Mac Local Lip-Sync (free, CPU/MPS at localhost:7860)
 Tier 2: NVIDIA Audio2Face (free credits, needs NVIDIA_API_KEY)
 Tier 3: D-ID API (managed, ~$0.05/video, needs DID_API_KEY)
+Tier 4: Duix.Avatar API (cloud, stunning HD, needs DUIX_API_KEY — https://docs.duix.com)
 
 Each tier is health-checked. First available wins.
 Falls back to audio-only if all tiers unavailable.
@@ -31,6 +32,8 @@ NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 NVIDIA_A2F_URL = "https://api.nvidia.com/v1/ace/audio2face-3d"
 DID_API_KEY = os.getenv("DID_API_KEY", "")
 DID_API_URL = "https://api.d-id.com/talks"
+DUIX_API_KEY = os.getenv("DUIX_API_KEY", "")
+DUIX_API_URL = "https://api.duix.com/v1"
 
 CACHE_DIR = os.getenv("LIPSYNC_CACHE_DIR", "/tmp/lipsync_cache")
 HEALTH_CHECK_TIMEOUT = 3.0
@@ -41,6 +44,7 @@ class Provider(str, Enum):
     WAV2LIP = "wav2lip"
     NVIDIA = "nvidia"
     DID = "did"
+    DUIX = "duix"
     NONE = "none"
 
 
@@ -107,6 +111,8 @@ class LipSyncFailover:
             result = await self._generate_nvidia(image_path, audio_path, text, person_id, text_hash)
         elif provider == Provider.DID:
             result = await self._generate_did(image_path, audio_path, text, person_id, text_hash)
+        elif provider == Provider.DUIX:
+            result = await self._generate_duix(image_path, audio_path, text, person_id, text_hash)
         else:
             result = GenerationResult(
                 success=False,
@@ -124,7 +130,7 @@ class LipSyncFailover:
     async def health(self) -> Dict[str, Any]:
         """Check health of all providers"""
         results = {}
-        for provider in [Provider.WAV2LIP, Provider.NVIDIA, Provider.DID]:
+        for provider in [Provider.WAV2LIP, Provider.NVIDIA, Provider.DID, Provider.DUIX]:
             available = await self._check_provider(provider)
             results[provider.value] = "available" if available else "unavailable"
         results["active"] = (await self._find_provider()).value
@@ -141,7 +147,7 @@ class LipSyncFailover:
             if self._provider_available.get(self._last_provider, False):
                 return self._last_provider
 
-        for provider in [Provider.WAV2LIP, Provider.NVIDIA, Provider.DID]:
+        for provider in [Provider.WAV2LIP, Provider.NVIDIA, Provider.DID, Provider.DUIX]:
             if await self._check_provider(provider):
                 self._last_provider = provider
                 self._last_health_check = now
@@ -162,6 +168,8 @@ class LipSyncFailover:
                 available = bool(NVIDIA_API_KEY)
             elif provider == Provider.DID:
                 available = bool(DID_API_KEY)
+            elif provider == Provider.DUIX:
+                available = bool(DUIX_API_KEY)
             else:
                 available = False
 
@@ -345,6 +353,82 @@ class LipSyncFailover:
 
         except Exception as e:
             return GenerationResult(False, Provider.DID, error=str(e))
+
+    # ------------------------------------------
+    # TIER 4: DUIX.AVATAR API
+    # ------------------------------------------
+
+    async def _generate_duix(
+        self, image_path: str, audio_path: str, text: str, person_id: str, text_hash: str
+    ) -> GenerationResult:
+        """
+        Duix.Avatar Cloud API — stunning HD lip-sync.
+        Docs: https://docs.duix.com/api-reference/api/Introduction
+        """
+        if not DUIX_API_KEY:
+            return GenerationResult(False, Provider.DUIX, error="No DUIX API key")
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {DUIX_API_KEY}",
+                "Content-Type": "application/json",
+            }
+
+            with open(image_path, "rb") as f:
+                image_b64 = base64.b64encode(f.read()).decode()
+            with open(audio_path, "rb") as f:
+                audio_b64 = base64.b64encode(f.read()).decode()
+
+            payload = {
+                "image": f"data:image/png;base64,{image_b64}",
+                "audio": f"data:audio/wav;base64,{audio_b64}",
+                "text": text,
+            }
+
+            async with httpx.AsyncClient(timeout=GENERATION_TIMEOUT) as client:
+                r = await client.post(f"{DUIX_API_URL}/lipsync", headers=headers, json=payload)
+
+                if r.status_code == 200:
+                    data = r.json()
+                    task_id = data.get("task_id", data.get("id", ""))
+
+                    if task_id:
+                        # Poll for completion
+                        for _ in range(60):
+                            await asyncio.sleep(2)
+                            status_r = await client.get(
+                                f"{DUIX_API_URL}/lipsync/{task_id}", headers=headers
+                            )
+                            if status_r.status_code == 200:
+                                status_data = status_r.json()
+                                status = status_data.get("status", "")
+                                if status == "completed":
+                                    result_url = status_data.get("result_url", status_data.get("video_url", ""))
+                                    if result_url:
+                                        dl = await client.get(result_url)
+                                        out_path = str(self.cache_dir / "video" / f"{person_id}_{text_hash}.mp4")
+                                        with open(out_path, "wb") as f:
+                                            f.write(dl.content)
+                                        return GenerationResult(True, Provider.DUIX, video_path=out_path)
+                                elif status in ("failed", "error"):
+                                    return GenerationResult(False, Provider.DUIX, error="Duix processing failed")
+                        return GenerationResult(False, Provider.DUIX, error="Duix timed out")
+
+                    # Synchronous response with video
+                    video_b64 = data.get("video", "")
+                    if video_b64:
+                        if "," in video_b64:
+                            video_b64 = video_b64.split(",")[1]
+                        video_bytes = base64.b64decode(video_b64)
+                        out_path = str(self.cache_dir / "video" / f"{person_id}_{text_hash}.mp4")
+                        with open(out_path, "wb") as f:
+                            f.write(video_bytes)
+                        return GenerationResult(True, Provider.DUIX, video_path=out_path)
+
+                return GenerationResult(False, Provider.DUIX, error=f"Duix HTTP {r.status_code}: {r.text[:200]}")
+
+        except Exception as e:
+            return GenerationResult(False, Provider.DUIX, error=str(e))
 
     # ------------------------------------------
     # CACHE
