@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: avatario-api
+    runtime: python
+    rootDir: backend
+    plan: starter
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: avatario-api-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: AVATARIO_DATA_DIR
+        value: /var/data
+      - key: CORS_ALLOW_ORIGINS
+        value: https://avatario.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+      - key: VLLM_API_KEY
+        sync: false
+      - key: VLLM_API_BASE
+        sync: false
+      - key: VLLM_MODEL
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: LLM_INSTANCE_ID
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: EXOTEL_API_KEY
+        sync: false
+      - key: EXOTEL_API_TOKEN
+        sync: false
+      - key: EXOTEL_ACCOUNT_SID
+        sync: false
+      - key: EXOTEL_SUBDOMAIN
+        sync: false
+      - key: EXOTEL_CALLER_ID
+        sync: false

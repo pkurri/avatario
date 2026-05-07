@@ -10,3 +10,7 @@ websockets
 httpx
 langchain-openai
 python-multipart
+signalwire
+boto3
+livekit-api
+audioop-lts  # Python 3.13 compatibility

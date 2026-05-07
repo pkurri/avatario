@@ -69,10 +69,24 @@ This creates tables for demo users, sessions, call logs, transcripts, conversati
 
 ## Backend Deployment Notes
 
-The FastAPI service must allow CORS for the Vercel domain and must support WebSockets over TLS. Use a production command similar to:
+The FastAPI service must allow CORS for the Vercel domain and must support WebSockets over TLS. Render is the default backend host for this repo via `render.yaml`.
+
+Render blueprint:
+
+```text
+render.yaml
+```
+
+Render start command:
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port "$PORT"
+```
+
+Set `CORS_ALLOW_ORIGINS` to your final Vercel URL plus local dev URLs:
+
+```text
+CORS_ALLOW_ORIGINS=https://your-vercel-app.vercel.app,http://localhost:3000,http://127.0.0.1:3000
 ```
 
 For generated videos/images, prefer Supabase Storage or S3 instead of local filesystem paths.
