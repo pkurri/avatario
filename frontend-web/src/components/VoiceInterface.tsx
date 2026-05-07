@@ -15,6 +15,7 @@ import { RealAIPerson } from './RealAIPerson';
 import { RealTalkingPerson } from './RealTalkingPerson';
 import { FaceClone } from './FaceClone';
 import { useAudioLevel } from '../hooks/useAudioLevel';
+import { apiUrl } from '@/lib/config';
 
 // Extended persona definition with avatar configuration
 interface PersonaDefinition {
@@ -126,7 +127,7 @@ function VoiceAssistantUI({ selectedPersona, onDisconnect }: { selectedPersona: 
     try {
       const welcomeText = `Hello, I'm ${selectedPersona.name}. ${selectedPersona.greeting}`;
       
-      const response = await fetch('http://localhost:8000/lipsync/generate', {
+      const response = await fetch(apiUrl('/lipsync/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -366,27 +367,29 @@ export default function VoiceInterface() {
   const [llmStatus, setLlmStatus] = useState<string>("unknown");
   const selectedPersona = personas.find(p => p.id === selectedPersonaId) || null;
 
-  const checkLlmStatus = async () => {
+  const checkLlmStatus = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:8000/llm_status`);
+      const res = await fetch(apiUrl('/llm_status'));
       const data = await res.json();
       setLlmStatus(data.status);
       
       if (data.status === "stopped") {
         console.log("LLM is stopped. Sending wake signal...");
-        await fetch(`http://localhost:8000/wake_llm`, { method: 'POST' });
+        await fetch(apiUrl('/wake_llm'), { method: 'POST' });
         setLlmStatus("starting");
       }
     } catch (err) {
       console.error("Failed to check LLM status:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     if (selectedPersonaId) {
-      checkLlmStatus();
+      const initialCheck = setTimeout(() => {
+        checkLlmStatus();
+      }, 0);
       // Poll every 5 seconds if waking up
       interval = setInterval(() => {
         if (llmStatus !== "running") {
@@ -394,20 +397,27 @@ export default function VoiceInterface() {
         }
       }, 5000);
       // Fetch LiveKit connection details
-      fetch(`http://localhost:8000/get_livekit_token?participant_name=client&room_name=avatario-${selectedPersonaId}&role=${selectedPersonaId}`)
+      fetch(apiUrl(`/get_livekit_token?participant_name=client&room_name=avatario-${selectedPersonaId}&role=${selectedPersonaId}`))
         .then(res => res.json())
         .then(data => {
           setToken(data.token);
           setUrl(data.url);
         })
         .catch(err => console.error("Failed to fetch LiveKit token:", err));
+      return () => {
+        clearTimeout(initialCheck);
+        clearInterval(interval);
+      };
     } else {
-      setToken("");
-      setUrl("");
-      setLlmStatus("unknown");
+      const resetState = setTimeout(() => {
+        setToken("");
+        setUrl("");
+        setLlmStatus("unknown");
+      }, 0);
+      return () => clearTimeout(resetState);
     }
     return () => clearInterval(interval);
-  }, [selectedPersonaId, llmStatus]);
+  }, [checkLlmStatus, selectedPersonaId, llmStatus]);
 
   if (!selectedPersonaId) {
     return (

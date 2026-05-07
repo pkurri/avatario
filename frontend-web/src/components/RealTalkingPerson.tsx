@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles, Video, Loader2, User, AlertCircle } from 'lucide-react';
+import { API_BASE, apiUrl } from '@/lib/config';
 
 // ==========================================
 // TYPES
@@ -69,7 +70,7 @@ export function RealTalkingPerson({
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/talking-person/create', {
+      const response = await fetch(apiUrl('/talking-person/create'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +96,7 @@ export function RealTalkingPerson({
 
       // Set initial video if complete
       if (data.video_url) {
-        setCurrentVideo(`http://localhost:8000${data.video_url}`);
+        setCurrentVideo(`${API_BASE}${data.video_url}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create talking person');
@@ -111,7 +112,7 @@ export function RealTalkingPerson({
     setIsGeneratingVideo(true);
 
     try {
-      const response = await fetch('http://localhost:8000/talking-person/video', {
+      const response = await fetch(apiUrl('/talking-person/video'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -124,7 +125,7 @@ export function RealTalkingPerson({
       if (response.ok) {
         const data = await response.json();
         if (data.video_url) {
-          setCurrentVideo(`http://localhost:8000${data.video_url}`);
+          setCurrentVideo(`${API_BASE}${data.video_url}`);
         }
       }
     } catch (err) {
@@ -314,7 +315,7 @@ function PersonDisplay({
           <>
             {person.image_url && (
               <img
-                src={`http://localhost:8000${person.image_url}`}
+                src={`${API_BASE}${person.image_url}`}
                 alt={person.name}
                 className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onLoad={onImageLoad}
@@ -428,7 +429,7 @@ export function useTalkingPerson(
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/talking-person/create', {
+      const response = await fetch(apiUrl('/talking-person/create'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -457,7 +458,7 @@ export function useTalkingPerson(
     if (!person) return;
 
     try {
-      const response = await fetch('http://localhost:8000/talking-person/video', {
+      const response = await fetch(apiUrl('/talking-person/video'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

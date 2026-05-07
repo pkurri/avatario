@@ -18,8 +18,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-
-const API_BASE = "http://localhost:8000";
+import { API_BASE } from "@/lib/config";
 
 // ==========================================
 // TYPES
@@ -752,15 +751,9 @@ function ActiveFaceDisplay({
   const [isTalking, setIsTalking] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const waveHeights = [14, 22, 18, 24, 16];
 
-  // Play audio when audioUrl changes (audio-only mode)
-  useEffect(() => {
-    if (audioUrl && !videoUrl) {
-      playAudio(audioUrl);
-    }
-  }, [audioUrl]);
-
-  const playAudio = (url: string) => {
+  const playAudio = useCallback((url: string) => {
     // Stop any existing audio
     if (audioRef.current) {
       audioRef.current.pause();
@@ -776,7 +769,14 @@ function ActiveFaceDisplay({
     audio.onpause = () => setIsPlayingAudio(false);
     
     audio.play().catch(() => setIsPlayingAudio(false));
-  };
+  }, []);
+
+  // Play audio when audioUrl changes (audio-only mode)
+  useEffect(() => {
+    if (audioUrl && !videoUrl) {
+      playAudio(audioUrl);
+    }
+  }, [audioUrl, playAudio, videoUrl]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -847,11 +847,11 @@ function ActiveFaceDisplay({
                 />
                 {/* Sound wave bars at bottom */}
                 <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-end gap-1">
-                  {[...Array(5)].map((_, i) => (
+                  {waveHeights.map((height, i) => (
                     <motion.div
                       key={i}
                       className="w-1 bg-blue-400 rounded-full"
-                      animate={{ height: [4, 12 + Math.random() * 12, 4] }}
+                      animate={{ height: [4, height, 4] }}
                       transition={{ duration: 0.3 + i * 0.1, repeat: Infinity, delay: i * 0.08 }}
                     />
                   ))}

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, User, Sparkles, Video, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { apiUrl } from '@/lib/config';
 
 // ==========================================
 // TYPES
@@ -67,7 +68,7 @@ export function RealAIPerson({
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/ai-person/generate', {
+      const response = await fetch(apiUrl('/ai-person/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +104,7 @@ export function RealAIPerson({
     if (!person || !hasRealImage) return;
 
     try {
-      const response = await fetch('http://localhost:8000/ai-person/talking-head', {
+      const response = await fetch(apiUrl('/ai-person/talking-head'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -402,7 +403,7 @@ export function useAIPerson(vertical?: string, gender?: 'male' | 'female') {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/ai-person/generate', {
+      const response = await fetch(apiUrl('/ai-person/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -430,7 +431,7 @@ export function useAIPerson(vertical?: string, gender?: 'male' | 'female') {
     if (!person) return;
 
     try {
-      const response = await fetch('http://localhost:8000/ai-person/talking-head', {
+      const response = await fetch(apiUrl('/ai-person/talking-head'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

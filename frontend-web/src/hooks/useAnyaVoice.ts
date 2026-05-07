@@ -1,7 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { wsUrl } from '@/lib/config';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 type Role = 'client' | 'lawyer';
+type BrowserWindowWithAudioContext = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
 
 export function useAnyaVoice(role: Role = 'client') {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
@@ -18,19 +22,44 @@ export function useAnyaVoice(role: Role = 'client') {
   useEffect(() => {
     // Only initialize in browser
     if (typeof window !== 'undefined') {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
+      const AudioContextConstructor = window.AudioContext || (window as BrowserWindowWithAudioContext).webkitAudioContext;
+      if (AudioContextConstructor) {
+        audioContextRef.current = new AudioContextConstructor();
+      }
     }
     return () => {
       audioContextRef.current?.close();
     };
   }, []);
 
+  const playAudio = useCallback(async (audioBlob: Blob) => {
+    if (!audioContextRef.current) return;
+    
+    setIsPlaying(true);
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+      
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      
+      source.onended = () => {
+        setIsPlaying(false);
+      };
+      
+      source.start();
+    } catch (e) {
+      console.error("Failed to play audio:", e);
+      setIsPlaying(false);
+    }
+  }, []);
+
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     setConnectionState('connecting');
-    const ws = new WebSocket(`ws://localhost:8000/chat/${role}`);
+    const ws = new WebSocket(wsUrl(`/chat/${role}`));
 
     ws.onopen = () => {
       setConnectionState('connected');
@@ -58,7 +87,7 @@ export function useAnyaVoice(role: Role = 'client') {
     };
 
     wsRef.current = ws;
-  }, [role]);
+  }, [playAudio, role]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -66,29 +95,6 @@ export function useAnyaVoice(role: Role = 'client') {
       wsRef.current = null;
     }
   }, []);
-
-  const playAudio = async (audioBlob: Blob) => {
-    if (!audioContextRef.current) return;
-    
-    setIsPlaying(true);
-    try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-      
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      
-      source.onended = () => {
-        setIsPlaying(false);
-      };
-      
-      source.start();
-    } catch (e) {
-      console.error("Failed to play audio:", e);
-      setIsPlaying(false);
-    }
-  };
 
   const startRecording = async () => {
     if (connectionState !== 'connected') {
