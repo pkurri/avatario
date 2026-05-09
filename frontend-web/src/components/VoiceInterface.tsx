@@ -8,7 +8,7 @@ import {
   RoomAudioRenderer,
   useVoiceAssistant,
 } from "@livekit/components-react";
-import { llm, livekit, personas as personasApi } from '@/lib/api';
+import { llm, livekit, lipsync, personas as personasApi } from '@/lib/api';
 import "@livekit/components-styles";
 import { AIAvatar, AvatarConfig, AVATAR_PRESETS } from './AIAvatar';
 import { TalkingAvatar } from './TalkingAvatar';
@@ -16,7 +16,6 @@ import { RealAIPerson } from './RealAIPerson';
 import { RealTalkingPerson } from './RealTalkingPerson';
 import { FaceClone } from './FaceClone';
 import { useAudioLevel } from '../hooks/useAudioLevel';
-import { apiUrl } from '@/lib/config';
 
 // Extended persona definition with avatar configuration
 interface PersonaDefinition {
@@ -87,28 +86,13 @@ function VoiceAssistantUI({ selectedPersona, onDisconnect }: { selectedPersona: 
 
   const generateWelcomeVideo = async () => {
     if (!selectedPersona) return;
-    
     setIsGeneratingVideo(true);
     try {
-      const welcomeText = `Hello, I'm ${selectedPersona.name}. ${selectedPersona.greeting}`;
-      
-      const response = await fetch(apiUrl('/lipsync/generate'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          persona_id: selectedPersona.id,
-          text: welcomeText,
-          model: 'infinitetalk-image-to-video',
-          resolution: '512x512'
-        })
+      const data = await lipsync.generate({
+        persona_id: selectedPersona.id,
+        text: `Hello, I'm ${selectedPersona.name}. ${selectedPersona.greeting}`,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.video_url) {
-          setVideoUrl(data.video_url);
-        }
-      }
+      if (data.video_url) setVideoUrl(data.video_url);
     } catch (err) {
       console.error('Failed to generate welcome video:', err);
     } finally {

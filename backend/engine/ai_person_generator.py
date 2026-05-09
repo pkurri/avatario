@@ -1,3 +1,4 @@
+import logging
 # backend/engine/ai_person_generator.py
 """
 AI Person Generator - Creates realistic AI human avatars
@@ -12,6 +13,8 @@ from dataclasses import dataclass
 from enum import Enum
 import hashlib
 import json
+
+logger = logging.getLogger(__name__)
 
 class Gender(str, Enum):
     MALE = "male"
@@ -189,7 +192,7 @@ class AIPersonGenerator:
                     if data.get("images"):
                         return data["images"][0]
         except Exception as e:
-            print(f"Image generation API failed: {e}")
+            logger.error(f"Image generation API failed: {e}")
         
         # Fallback: Return placeholder that indicates AI generation needed
         # In production, this would be a generated image URL

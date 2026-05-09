@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { lipsync } from '@/lib/api';
 
 // ==========================================
 // TALKING AVATAR - Video-based with lip sync
@@ -305,32 +306,14 @@ export function useTalkingAvatar({
     setStatus('generating');
 
     try {
-      const response = await fetch('/api/lipsync/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          persona_id: personaId,
-          text,
-          model: 'infinitetalk-image-to-video',
-          resolution: '512x512'
-        })
-      });
+      const data = await lipsync.generate({ persona_id: personaId, text });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate video');
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
 
       if (data.video_url) {
         setVideoUrl(data.video_url);
         setStatus('completed');
       } else if (data.job_id) {
-        // Poll for completion
         pollForVideo(data.job_id);
       }
     } catch (err) {
@@ -344,8 +327,7 @@ export function useTalkingAvatar({
   const pollForVideo = async (jobId: string) => {
     const checkStatus = async () => {
       try {
-        const response = await fetch(`/api/lipsync/status/${jobId}`);
-        const data = await response.json();
+        const data = await lipsync.status(jobId);
 
         if (data.status === 'completed' && data.video_url) {
           setVideoUrl(data.video_url);
@@ -356,10 +338,10 @@ export function useTalkingAvatar({
           setStatus('error');
           setIsGenerating(false);
         } else {
-          // Still processing, poll again
           setTimeout(() => checkStatus(), 2000);
         }
       } catch (err) {
+        console.error('Failed to check video status:', err);
         setError('Failed to check video status');
         setStatus('error');
         setIsGenerating(false);

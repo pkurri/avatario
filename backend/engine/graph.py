@@ -1,3 +1,4 @@
+import logging
 # backend/engine/graph.py
 # Generic AI conversation graph - works with any vertical/industry
 
@@ -14,6 +15,8 @@ import os
 import httpx
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -126,7 +129,7 @@ async def generate_ai_response(state: AppState) -> dict:
         response = await llm.ainvoke(formatted_messages)
         reply = response.content
     except Exception as e:
-        print(f"LLM Error: {e}")
+        logger.error(f"LLM Error: {e}")
         reply = f"I apologize, but I am unable to process your request at this moment due to a connection issue. (Error: {str(e)})"
     
     return {"messages": [AIMessage(content=reply.strip())]}
