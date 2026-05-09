@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { Mic, Square, Loader2, Video, Image as ImageIcon, RefreshCw, Sparkles, Camera } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   useVoiceAssistant,
 } from "@livekit/components-react";
+import { llm, livekit, personas as personasApi } from '@/lib/api';
 import "@livekit/components-styles";
 import { AIAvatar, AvatarConfig, AVATAR_PRESETS } from './AIAvatar';
 import { TalkingAvatar } from './TalkingAvatar';
@@ -27,76 +28,40 @@ interface PersonaDefinition {
   avatarConfig: AvatarConfig;
 }
 
-// Define personas with animated avatar configurations
-const personas: PersonaDefinition[] = [
-  {
-    id: "client",
-    name: "Advocate Anya",
-    color: "from-blue-500 to-purple-600",
-    shadow: "shadow-blue-500/50",
-    greeting: "Empathetic Legal Guide for Clients",
-    avatarConfig: { ...AVATAR_PRESETS.anya, name: "Advocate Anya" }
-  },
-  {
-    id: "lawyer",
-    name: "Senior Counsel Vikram",
-    color: "from-slate-700 to-slate-900",
-    shadow: "shadow-slate-600/50",
-    greeting: "Strategic Advisor for Legal Professionals",
-    avatarConfig: { ...AVATAR_PRESETS.vikram, name: "Senior Counsel Vikram" }
-  },
-  // Additional verticals - Medical
-  {
-    id: "dr-priya",
-    name: "Dr. Priya",
-    color: "from-emerald-500 to-teal-600",
-    shadow: "shadow-emerald-500/50",
-    greeting: "Caring Medical Information Assistant",
-    avatarConfig: { ...AVATAR_PRESETS['dr-priya'], name: "Dr. Priya" }
-  },
-  {
-    id: "dr-arjun",
-    name: "Dr. Arjun",
-    color: "from-cyan-700 to-blue-900",
-    shadow: "shadow-cyan-600/50",
-    greeting: "Professional Clinical Decision Support",
-    avatarConfig: { ...AVATAR_PRESETS['dr-arjun'], name: "Dr. Arjun" }
-  },
-  // Finance vertical
-  {
-    id: "advisor-maya",
-    name: "Maya - Finance Advisor",
-    color: "from-amber-500 to-orange-600",
-    shadow: "shadow-amber-500/50",
-    greeting: "Personal Finance & Investment Guide",
-    avatarConfig: { ...AVATAR_PRESETS['advisor-maya'], name: "Maya" }
-  },
-  {
-    id: "analyst-raj",
-    name: "Raj - Wealth Analyst",
-    color: "from-violet-700 to-purple-900",
-    shadow: "shadow-violet-600/50",
-    greeting: "Advanced Financial Analysis & Strategy",
-    avatarConfig: { ...AVATAR_PRESETS['analyst-raj'], name: "Raj" }
-  },
-  // Generic
-  {
-    id: "assistant-sarah",
-    name: "Sarah",
-    color: "from-pink-500 to-rose-600",
-    shadow: "shadow-pink-500/50",
-    greeting: "Your Personal AI Assistant",
-    avatarConfig: { ...AVATAR_PRESETS['assistant-sarah'], name: "Sarah" }
-  },
-  {
-    id: "assistant-alex",
-    name: "Alex",
-    color: "from-indigo-500 to-blue-600",
-    shadow: "shadow-indigo-500/50",
-    greeting: "Multi-Purpose AI Helper",
-    avatarConfig: { ...AVATAR_PRESETS['assistant-alex'], name: "Alex" }
-  },
-];
+// Preset avatar IDs keyed by backend persona id — add entries here as personas are added to the YAML
+const PERSONA_AVATAR_MAP: Record<string, string> = {
+  client: 'anya',
+  lawyer: 'vikram',
+  'dr-priya': 'dr-priya',
+  'dr-arjun': 'dr-arjun',
+  'advisor-maya': 'advisor-maya',
+  'analyst-raj': 'analyst-raj',
+  'assistant-sarah': 'assistant-sarah',
+  'assistant-alex': 'assistant-alex',
+};
+
+const DEFAULT_AVATAR_CONFIG: AvatarConfig = AVATAR_PRESETS['assistant-sarah'];
+
+function mapBackendPersona(p: {
+  id: string;
+  name: string;
+  color: string;
+  shadow: string;
+  description: string;
+}): PersonaDefinition {
+  const presetKey = PERSONA_AVATAR_MAP[p.id];
+  const avatarConfig = presetKey && AVATAR_PRESETS[presetKey]
+    ? { ...AVATAR_PRESETS[presetKey], name: p.name }
+    : { ...DEFAULT_AVATAR_CONFIG, name: p.name };
+  return {
+    id: p.id,
+    name: p.name,
+    color: p.color || 'from-blue-500 to-purple-600',
+    shadow: p.shadow || 'shadow-blue-500/50',
+    greeting: p.description,
+    avatarConfig,
+  };
+}
 
 function VoiceAssistantUI({ selectedPersona, onDisconnect }: { selectedPersona: PersonaDefinition | null, onDisconnect: () => void }) {
   const { state } = useVoiceAssistant();
@@ -365,18 +330,33 @@ export default function VoiceInterface() {
   const [token, setToken] = useState("");
   const [url, setUrl] = useState("");
   const [llmStatus, setLlmStatus] = useState<string>("unknown");
+  const [personas, setPersonas] = useState<PersonaDefinition[]>([]);
+  const [personasError, setPersonasError] = useState<string | null>(null);
+
+  useEffect(() => {
+    personasApi.list()
+      .then(data => setPersonas((data.personas ?? []).map(mapBackendPersona)))
+      .catch(err => {
+        console.error('Failed to load personas:', err);
+        setPersonasError('Could not load personas. Please refresh.');
+      });
+  }, []);
+
   const selectedPersona = personas.find(p => p.id === selectedPersonaId) || null;
+
+  // Exponential backoff state for LLM polling: 2s → 4s → 8s → … capped at 30s
+  const backoffRef = useRef(2000);
 
   const checkLlmStatus = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl('/llm_status'));
-      const data = await res.json();
+      const data = await llm.status();
       setLlmStatus(data.status);
-      
       if (data.status === "stopped") {
-        console.log("LLM is stopped. Sending wake signal...");
-        await fetch(apiUrl('/wake_llm'), { method: 'POST' });
+        await llm.wake();
         setLlmStatus("starting");
+      }
+      if (data.status === "running") {
+        backoffRef.current = 2000; // reset on success
       }
     } catch (err) {
       console.error("Failed to check LLM status:", err);
@@ -384,47 +364,54 @@ export default function VoiceInterface() {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (selectedPersonaId) {
-      const initialCheck = setTimeout(() => {
-        checkLlmStatus();
-      }, 0);
-      // Poll every 5 seconds if waking up
-      interval = setInterval(() => {
-        if (llmStatus !== "running") {
-          checkLlmStatus();
-        }
-      }, 5000);
-      // Fetch LiveKit connection details
-      fetch(apiUrl(`/get_livekit_token?participant_name=client&room_name=avatario-${selectedPersonaId}&role=${selectedPersonaId}`))
-        .then(res => res.json())
-        .then(data => {
-          setToken(data.token);
-          setUrl(data.url);
-        })
-        .catch(err => console.error("Failed to fetch LiveKit token:", err));
-      return () => {
-        clearTimeout(initialCheck);
-        clearInterval(interval);
-      };
-    } else {
-      const resetState = setTimeout(() => {
-        setToken("");
-        setUrl("");
-        setLlmStatus("unknown");
-      }, 0);
-      return () => clearTimeout(resetState);
+    if (!selectedPersonaId) {
+      setToken("");
+      setUrl("");
+      setLlmStatus("unknown");
+      backoffRef.current = 2000;
+      return;
     }
-    return () => clearInterval(interval);
-  }, [checkLlmStatus, selectedPersonaId, llmStatus]);
+
+    let timeoutId: NodeJS.Timeout;
+
+    const poll = async () => {
+      if (llmStatus === "running") return;
+      await checkLlmStatus();
+      // Exponential backoff, cap at 30s
+      backoffRef.current = Math.min(backoffRef.current * 2, 30000);
+      timeoutId = setTimeout(poll, backoffRef.current);
+    };
+
+    // Initial check immediately, then back off
+    checkLlmStatus();
+    timeoutId = setTimeout(poll, backoffRef.current);
+
+    livekit.getToken({
+      participant_name: 'client',
+      room_name: `avatario-${selectedPersonaId}`,
+      role: selectedPersonaId,
+    })
+      .then(data => { setToken(data.token); setUrl(data.url); })
+      .catch(err => console.error("Failed to fetch LiveKit token:", err));
+
+    return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonaId]);
 
   if (!selectedPersonaId) {
     return (
       <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-6">
         <h1 className="text-3xl font-light text-white mb-2 tracking-tight">AI Assistant <span className="font-medium text-blue-500">Hub</span></h1>
         <p className="text-neutral-400 mb-12">Choose your AI specialist from any industry</p>
-        
+
+        {personasError && (
+          <p className="text-red-400 text-sm mb-6">{personasError}</p>
+        )}
+
+        {personas.length === 0 && !personasError && (
+          <p className="text-neutral-500 text-sm mb-6 animate-pulse">Loading personas...</p>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
           {personas.map((p) => (
             <button

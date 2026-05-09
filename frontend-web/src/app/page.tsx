@@ -544,6 +544,7 @@ export default function LandingPage() {
             </div>
           </div>
         </footer>
+      </section>
     </div>
   );
 }

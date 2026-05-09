@@ -1,148 +1,235 @@
-/**
- * Avatario API Client
- * Stubs for backend integration
- */
-
-// Types
-export interface TwinData {
-  id: string;
-  name: string;
-  interactions: number;
-  learnedFacts: string[];
-  preferences: Record<string, string>;
-  lastActive: string;
-}
-
-export interface PersonaConfig {
-  id: string;
-  name: string;
-  description: string;
-  voiceId?: string;
-  trainingSamples: string[];
-  status: 'training' | 'ready' | 'error';
-  createdAt: string;
-}
-
-export interface VoiceSession {
-  sessionId: string;
-  status: 'connecting' | 'active' | 'closed';
-  transcript: string[];
-  latency: number;
-}
-
-export interface WidgetConfig {
-  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-  greeting: string;
-  quickActions: { label: string; action: string }[];
-  theme: 'dark' | 'light';
-}
-
 import { API_BASE } from "./config";
 
-class AvatarioAPI {
-  private baseUrl: string;
+// ==========================================
+// SHARED FETCH HELPER
+// ==========================================
 
-  constructor(baseUrl: string = API_BASE) {
-    this.baseUrl = baseUrl;
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, options);
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`HTTP ${res.status}: ${text}`);
   }
-
-  // Digital Twin API
-  async fetchTwinData(twinId: string): Promise<TwinData> {
-    // Stub - replace with actual API call
-    console.log(`Fetching twin data for: ${twinId}`);
-    return {
-      id: twinId,
-      name: 'My Digital Twin',
-      interactions: 1523,
-      learnedFacts: [
-        'Prefer email summaries over detailed reports',
-        'Most active during 9-11 AM',
-        'Frequently handles contract reviews'
-      ],
-      preferences: {
-        language: 'English',
-        communicationStyle: 'Professional'
-      },
-      lastActive: new Date().toISOString()
-    };
-  }
-
-  async updateTwinPreferences(twinId: string, preferences: Record<string, string>): Promise<TwinData> {
-    console.log(`Updating twin preferences for: ${twinId}`, preferences);
-    return this.fetchTwinData(twinId);
-  }
-
-  // Persona Cloner API
-  async clonePersona(name: string, samples: string[]): Promise<PersonaConfig> {
-    console.log(`Cloning persona: ${name} with ${samples.length} samples`);
-    return {
-      id: `persona-${Date.now()}`,
-      name,
-      description: `Cloned persona based on ${samples.length} training samples`,
-      trainingSamples: samples,
-      status: 'training',
-      createdAt: new Date().toISOString()
-    };
-  }
-
-  async getPersonaStatus(personaId: string): Promise<PersonaConfig> {
-    console.log(`Fetching persona status: ${personaId}`);
-    return {
-      id: personaId,
-      name: 'Legal Assistant',
-      description: 'Trained legal AI persona',
-      trainingSamples: [],
-      status: 'ready',
-      createdAt: new Date().toISOString()
-    };
-  }
-
-  // Realtime Voice API
-  async startVoiceSession(): Promise<VoiceSession> {
-    console.log('Starting voice session');
-    return {
-      sessionId: `voice-${Date.now()}`,
-      status: 'connecting',
-      transcript: [],
-      latency: 0
-    };
-  }
-
-  async sendVoiceChunk(sessionId: string, audioChunk: Blob): Promise<{ transcript: string }> {
-    console.log(`Sending voice chunk to session: ${sessionId}`);
-    return { transcript: 'Voice transcription stub' };
-  }
-
-  async endVoiceSession(sessionId: string): Promise<void> {
-    console.log(`Ending voice session: ${sessionId}`);
-  }
-
-  // Widget Config API
-  async getWidgetConfig(): Promise<WidgetConfig> {
-    console.log('Fetching widget config');
-    return {
-      position: 'bottom-right',
-      greeting: 'Hello! How can I help you today?',
-      quickActions: [
-        { label: 'Chat', action: 'openChat' },
-        { label: 'Voice', action: 'startVoice' },
-        { label: 'Book', action: 'bookAppointment' }
-      ],
-      theme: 'dark'
-    };
-  }
-
-  async updateWidgetConfig(config: Partial<WidgetConfig>): Promise<WidgetConfig> {
-    console.log('Updating widget config:', config);
-    return this.getWidgetConfig();
-  }
+  return res.json() as Promise<T>;
 }
 
-// Export singleton instance
-export const api = new AvatarioAPI();
+function postJson<T>(path: string, body: unknown): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
 
-// Export individual functions for convenience
-export const fetchTwinData = (twinId: string) => api.fetchTwinData(twinId);
-export const clonePersona = (name: string, samples: string[]) => api.clonePersona(name, samples);
-export const startVoiceSession = () => api.startVoiceSession();
-export const getWidgetConfig = () => api.getWidgetConfig();
+// ==========================================
+// TYPES
+// ==========================================
+
+export interface BackendPersona {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  color: string;
+  shadow: string;
+  avatar: string;
+  voice_speaker: string;
+}
+
+export interface AIPerson {
+  id: string;
+  name: string;
+  image_url: string;
+  vertical: string;
+  gender: string;
+  ready: boolean;
+  traits?: { gender: string; ethnicity: string; age_group: string; profession: string };
+}
+
+export interface TalkingPerson {
+  id: string;
+  name: string;
+  status: 'image' | 'audio' | 'video' | 'complete' | 'error';
+  image_url?: string;
+  video_url?: string;
+  error?: string;
+  config: { gender: string; age: string; ethnicity: string; profession: string };
+}
+
+export interface ClonedFace {
+  id: string;
+  name: string;
+  mode: 'clone' | 'generate';
+  source: string;
+  status: 'processing' | 'ready' | 'talking' | 'error';
+  image_url: string;
+  thumbnail_url: string;
+  created_at: string;
+  gender?: string;
+  ethnicity?: string;
+  age?: string;
+  profession?: string;
+  video_count: number;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TalkResult {
+  face_id: string;
+  name: string;
+  text: string;
+  video_url?: string | null;
+  audio_url?: string | null;
+  image_url?: string;
+  status: string;
+  error?: string;
+  cached?: boolean;
+  has_video?: boolean;
+  has_audio?: boolean;
+}
+
+export interface LipSyncResult {
+  job_id?: string;
+  video_url?: string;
+  status: string;
+  cached: boolean;
+  error?: string;
+}
+
+export interface LlmStatus {
+  status: 'running' | 'stopped' | 'starting' | 'unknown';
+}
+
+export interface LiveKitToken {
+  token: string;
+  url: string;
+}
+
+// ==========================================
+// PERSONAS
+// ==========================================
+
+export const personas = {
+  list: (): Promise<{ personas: BackendPersona[] }> =>
+    apiFetch('/personas'),
+
+  get: (id: string): Promise<BackendPersona> =>
+    apiFetch(`/personas/${id}`),
+};
+
+// ==========================================
+// LLM STATUS
+// ==========================================
+
+export const llm = {
+  status: (): Promise<LlmStatus> =>
+    apiFetch('/llm_status'),
+
+  wake: (): Promise<unknown> =>
+    apiFetch('/wake_llm', { method: 'POST' }),
+};
+
+// ==========================================
+// LIVEKIT
+// ==========================================
+
+export const livekit = {
+  getToken: (params: {
+    participant_name: string;
+    room_name: string;
+    role: string;
+  }): Promise<LiveKitToken> => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/get_livekit_token?${qs}`);
+  },
+};
+
+// ==========================================
+// LIP SYNC
+// ==========================================
+
+export const lipsync = {
+  generate: (body: {
+    persona_id: string;
+    text: string;
+    model?: string;
+    resolution?: string;
+    image_url?: string;
+  }): Promise<LipSyncResult> =>
+    postJson('/lipsync/generate', {
+      model: 'infinitetalk-image-to-video',
+      resolution: '512x512',
+      ...body,
+    }),
+
+  status: (jobId: string): Promise<LipSyncResult> =>
+    apiFetch(`/lipsync/status/${jobId}`),
+};
+
+// ==========================================
+// AI PERSON
+// ==========================================
+
+export const aiPerson = {
+  generate: (body: {
+    vertical?: string;
+    gender?: string;
+    name?: string;
+  }): Promise<{ status: string; person: AIPerson }> =>
+    postJson('/ai-person/generate', body),
+
+  talkingHead: (body: {
+    persona_id: string;
+    text: string;
+    image_url: string;
+  }): Promise<unknown> =>
+    postJson('/ai-person/talking-head', body),
+};
+
+// ==========================================
+// TALKING PERSON
+// ==========================================
+
+export const talkingPerson = {
+  create: (body: {
+    vertical?: string;
+    gender?: string;
+    name?: string;
+    ethnicity?: string;
+  }): Promise<TalkingPerson> =>
+    postJson('/talking-person/create', body),
+
+  video: (body: {
+    person_id: string;
+    text: string;
+    emotion?: string;
+  }): Promise<unknown> =>
+    postJson('/talking-person/video', { emotion: 'neutral', ...body }),
+};
+
+// ==========================================
+// FACE CLONE
+// ==========================================
+
+export const faceClone = {
+  list: (mode?: string): Promise<{ faces: ClonedFace[] }> =>
+    apiFetch(`/face-clone/list${mode ? `?mode=${mode}` : ''}`),
+
+  talk: (body: { face_id: string; text: string; voice_id?: string }): Promise<TalkResult> =>
+    postJson('/face-clone/talk', body),
+
+  fromUrl: (body: { image_url: string; name: string }): Promise<ClonedFace> =>
+    postJson('/face-clone/from-url', body),
+
+  generate: (body: {
+    name: string;
+    gender?: string;
+    ethnicity?: string;
+    age?: string;
+    profession?: string;
+  }): Promise<ClonedFace> =>
+    postJson('/face-clone/generate', body),
+
+  delete: (faceId: string): Promise<{ deleted: boolean; face_id: string }> =>
+    apiFetch(`/face-clone/${faceId}`, { method: 'DELETE' }),
+};

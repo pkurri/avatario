@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { API_BASE } from "@/lib/config";
+import { faceClone as faceCloneApi, type ClonedFace as ApiFace, type TalkResult as ApiTalkResult } from "@/lib/api";
 
 // ==========================================
 // TYPES
@@ -93,13 +94,10 @@ export function FaceClone({
 
   const loadFaces = async () => {
     try {
-      const res = await fetch(`${API_BASE}/face-clone/list`);
-      if (res.ok) {
-        const data = await res.json();
-        setFaces(data.faces || []);
-      }
-    } catch {
-      // silent
+      const data = await faceCloneApi.list();
+      setFaces(data.faces || []);
+    } catch (err) {
+      console.error('Failed to load faces:', err);
     }
   };
 
@@ -112,15 +110,16 @@ export function FaceClone({
 
   const deleteFace = async (faceId: string) => {
     try {
-      await fetch(`${API_BASE}/face-clone/${faceId}`, { method: "DELETE" });
+      await faceCloneApi.delete(faceId);
       setFaces((prev) => prev.filter((f) => f.id !== faceId));
       if (activeFace?.id === faceId) {
         setActiveFace(null);
         setActiveVideo(null);
         setActiveAudio(null);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Failed to delete face:', err);
+      setError('Failed to delete face. Please try again.');
     }
   };
 
