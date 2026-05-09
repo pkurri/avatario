@@ -268,7 +268,7 @@ export function AIAvatar({
 
   // Original animated avatar implementation
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const stateRef = useRef({
     blinkTimer: 0,
     isBlinking: false,
