@@ -1,7 +1,10 @@
+import logging
 import boto3
 import os
 from typing import Dict
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
+
+logger = logging.getLogger(__name__)
 
 # Configuration
 REGION = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "ap-south-1"
@@ -43,10 +46,10 @@ async def get_llm_instance_status() -> Dict[str, str]:
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "ClientError")
         message = e.response.get("Error", {}).get("Message", str(e))
-        print(f"Error checking EC2 status [{code}]: {message}")
+        logger.error(f"Error checking EC2 status [{code}]: {message}")
         return {"status": "error", "message": f"{code}: {message}", "region": REGION, "instance_id": INSTANCE_ID}
     except Exception as e:
-        print(f"Error checking EC2 status: {e}")
+        logger.error(f"Error checking EC2 status: {e}")
         return {"status": "error", "message": str(e), "region": REGION, "instance_id": INSTANCE_ID}
 
 async def start_llm_instance() -> Dict[str, str]:
@@ -82,8 +85,8 @@ async def start_llm_instance() -> Dict[str, str]:
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "ClientError")
         message = e.response.get("Error", {}).get("Message", str(e))
-        print(f"Error starting EC2 instance [{code}]: {message}")
+        logger.error(f"Error starting EC2 instance [{code}]: {message}")
         return {"status": "error", "message": f"{code}: {message}", "region": REGION, "instance_id": INSTANCE_ID}
     except Exception as e:
-        print(f"Error starting EC2 instance: {e}")
+        logger.error(f"Error starting EC2 instance: {e}")
         return {"status": "error", "message": str(e), "region": REGION, "instance_id": INSTANCE_ID}

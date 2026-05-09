@@ -10,7 +10,7 @@ import { useVoiceAssistant } from "@livekit/components-react";
 export function useAudioLevel() {
   const { state } = useVoiceAssistant();
   const [audioLevel, setAudioLevel] = useState(0);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const timeRef = useRef(0);
 
   const simulateAudioPattern = useCallback(() => {
@@ -65,7 +65,7 @@ export function useAudioLevel() {
 export function useSimulatedAudioLevel(isSpeaking: boolean, isListening: boolean) {
   const [audioLevel, setAudioLevel] = useState(0);
   const timeRef = useRef(0);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!isSpeaking) {

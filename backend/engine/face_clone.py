@@ -1,3 +1,4 @@
+import logging
 # backend/engine/face_clone.py
 """
 Face Clone Engine - Clone any real human face for Conversational AI
@@ -19,6 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime
 import json
+
+logger = logging.getLogger(__name__)
 
 
 # ==========================================
@@ -123,7 +126,7 @@ class FaceCloneEngine:
                     face.audio_files = {}
                 self._faces[face.id] = face
             except Exception as e:
-                print(f"[FaceClone] Error loading {meta_file}: {e}")
+                logger.error(f"[FaceClone] Error loading {meta_file}: {e}")
 
     def _save_meta(self, face: ClonedFace):
         """Save face metadata to disk"""
@@ -205,7 +208,7 @@ class FaceCloneEngine:
         self._faces[face_id] = face
         self._save_meta(face)
         
-        print(f"[FaceClone] Cloned face from upload: {name} -> {face_id}")
+        logger.info(f"[FaceClone] Cloned face from upload: {name} -> {face_id}")
         return face
 
     # ------------------------------------------
@@ -276,7 +279,7 @@ class FaceCloneEngine:
         self._faces[face_id] = face
         self._save_meta(face)
         
-        print(f"[FaceClone] Cloned face from URL: {name} -> {face_id}")
+        logger.info(f"[FaceClone] Cloned face from URL: {name} -> {face_id}")
         return face
 
     # ------------------------------------------
@@ -306,7 +309,7 @@ class FaceCloneEngine:
             generated_path = await self._generate_with_flux(prompt, str(image_path))
             status = "ready" if generated_path and Path(generated_path).exists() else "error"
         except Exception as e:
-            print(f"[FaceClone] FLUX generation error: {e}")
+            logger.error(f"[FaceClone] FLUX generation error: {e}")
             generated_path = str(image_path)
             status = "error"
         
@@ -328,7 +331,7 @@ class FaceCloneEngine:
         self._faces[face_id] = face
         self._save_meta(face)
         
-        print(f"[FaceClone] Generated new AI face: {name} -> {face_id}")
+        logger.info(f"[FaceClone] Generated new AI face: {name} -> {face_id}")
         return face
 
     # ------------------------------------------
@@ -376,7 +379,7 @@ class FaceCloneEngine:
         
         try:
             # Step 1: Generate TTS audio
-            print(f"[FaceClone] Generating TTS for: {text[:50]}...")
+            logger.info(f"[FaceClone] Generating TTS for: {text[:50]}...")
             audio_path = await self._generate_tts(text, face_id, text_hash, voice_id)
             face.audio_files[text_hash] = audio_path
             
@@ -386,7 +389,7 @@ class FaceCloneEngine:
             # Step 2: Try lip-sync video (non-blocking — audio still works without it)
             video_url = None
             try:
-                print(f"[FaceClone] Generating lip-sync video...")
+                logger.info(f"[FaceClone] Generating lip-sync video...")
                 video_path = await self._generate_lipsync(
                     face.image_path, audio_path, face_id, text_hash
                 )
@@ -395,10 +398,10 @@ class FaceCloneEngine:
                     face.videos[text_hash] = video_path
                     video_url = f"/face-clone/{face_id}/video/{text_hash}"
                 else:
-                    print(f"[FaceClone] Lip-sync produced empty file, using audio-only mode")
+                    logger.info(f"[FaceClone] Lip-sync produced empty file, using audio-only mode")
                     Path(video_path).unlink(missing_ok=True)
             except Exception as lipsync_err:
-                print(f"[FaceClone] Lip-sync unavailable, using audio-only: {lipsync_err}")
+                logger.error(f"[FaceClone] Lip-sync unavailable, using audio-only: {lipsync_err}")
             
             face.status = "ready"
             self._save_meta(face)
@@ -419,7 +422,7 @@ class FaceCloneEngine:
         except Exception as e:
             face.status = "ready"
             self._save_meta(face)
-            print(f"[FaceClone] Talk generation error: {e}")
+            logger.error(f"[FaceClone] Talk generation error: {e}")
             return {"error": str(e), "status": "error"}
 
     # ------------------------------------------
@@ -491,7 +494,7 @@ class FaceCloneEngine:
             return processed_path
             
         except Exception as e:
-            print(f"[FaceClone] Face processing error: {e}")
+            logger.error(f"[FaceClone] Face processing error: {e}")
             return None
 
     # ------------------------------------------
@@ -561,7 +564,7 @@ class FaceCloneEngine:
         )
         
         if not IMAGE_API_KEY:
-            print("[FaceClone] No REPLICATE_API_TOKEN set, using placeholder")
+            logger.info("[FaceClone] No REPLICATE_API_TOKEN set, using placeholder")
             # Create a placeholder file so the path exists
             Path(output_path).touch()
             return output_path
@@ -618,7 +621,7 @@ class FaceCloneEngine:
             return output_path
             
         except Exception as e:
-            print(f"[FaceClone] FLUX error: {e}")
+            logger.error(f"[FaceClone] FLUX error: {e}")
             Path(output_path).touch()
             return output_path
 
@@ -648,7 +651,7 @@ class FaceCloneEngine:
                     f.write(audio_bytes)
                 return audio_path
         except Exception as e:
-            print(f"[FaceClone] TTS error: {e}")
+            logger.error(f"[FaceClone] TTS error: {e}")
         
         # Create empty file as fallback
         Path(audio_path).touch()
@@ -677,11 +680,11 @@ class FaceCloneEngine:
         )
 
         if result.success and result.video_path:
-            print(f"[FaceClone] Lip-sync video generated via {result.provider.value}")
+            logger.info(f"[FaceClone] Lip-sync video generated via {result.provider.value}")
             return result.video_path
 
         if result.error:
-            print(f"[FaceClone] Lip-sync unavailable: {result.error}")
+            logger.error(f"[FaceClone] Lip-sync unavailable: {result.error}")
 
         # Return empty placeholder
         video_path = str(self.video_dir / f"{face_id}_{text_hash}.mp4")

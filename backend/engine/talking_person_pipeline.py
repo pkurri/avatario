@@ -4,6 +4,7 @@ Talking Person Pipeline - Complete AI-generated human with lip-sync
 Pipeline: Text -> AI Image (FLUX) -> TTS Audio -> Lip Sync Video
 """
 
+import logging
 import os
 import httpx
 import asyncio
@@ -14,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import tempfile
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # CONFIGURATION
@@ -188,7 +191,8 @@ no jewelry, natural makeup, clean professional appearance
                         status_data = status_response.json()
                         
                         if status_data["status"] == "succeeded":
-                            image_url = status_data["output"]
+                            raw_output = status_data["output"]
+                            image_url = raw_output[0] if isinstance(raw_output, list) else raw_output
                             
                             # Download image
                             img_response = await client.get(image_url)
@@ -207,8 +211,7 @@ no jewelry, natural makeup, clean professional appearance
             return str(image_path)
             
         except Exception as e:
-            print(f"Image generation error: {e}")
-            # Return a fallback
+            logger.error("Image generation error: %s", e)
             return str(image_path)
     
     async def generate_audio(
@@ -238,8 +241,8 @@ no jewelry, natural makeup, clean professional appearance
                 return str(audio_path)
             
         except Exception as e:
-            print(f"TTS error: {e}")
-        
+            logger.error("TTS error: %s", e)
+
         return str(audio_path)
     
     async def generate_lip_sync_video(
@@ -265,11 +268,11 @@ no jewelry, natural makeup, clean professional appearance
         )
 
         if result.success and result.video_path:
-            print(f"[TalkingPerson] Lip-sync video generated via {result.provider.value}")
+            logger.info(f"[TalkingPerson] Lip-sync video generated via {result.provider.value}")
             return result.video_path
 
         if result.error:
-            print(f"[TalkingPerson] Lip sync unavailable: {result.error}")
+            logger.error(f"[TalkingPerson] Lip sync unavailable: {result.error}")
 
         return None
     
@@ -293,14 +296,14 @@ no jewelry, natural makeup, clean professional appearance
         
         try:
             # Step 1: Generate image
-            print(f"[TalkingPerson] Generating image for {name}...")
+            logger.info(f"[TalkingPerson] Generating image for {name}...")
             person.status = "image"
             image_path = await self.generate_image(config, person_id)
             person.image_path = image_path
             image_ok = Path(image_path).exists() and Path(image_path).stat().st_size > 100
             
             # Step 2: Generate TTS audio
-            print(f"[TalkingPerson] Generating TTS audio...")
+            logger.info(f"[TalkingPerson] Generating TTS audio...")
             person.status = "audio"
             audio_path = await self.generate_audio(welcome_text, person_id)
             person.audio_path = audio_path
@@ -309,21 +312,21 @@ no jewelry, natural makeup, clean professional appearance
             # Step 3: Try lip-sync video (non-blocking — audio still works without it)
             video_path = None
             if image_ok and audio_ok:
-                print(f"[TalkingPerson] Generating lip-sync video...")
+                logger.info(f"[TalkingPerson] Generating lip-sync video...")
                 person.status = "video"
                 video_path = await self.generate_lip_sync_video(image_path, audio_path, person_id, welcome_text)
             
             person.video_path = video_path
             person.status = "complete"
             if video_path:
-                print(f"[TalkingPerson] Complete! Video saved to {video_path}")
+                logger.info(f"[TalkingPerson] Complete! Video saved to {video_path}")
             else:
-                print(f"[TalkingPerson] Complete (audio-only — lip-sync unavailable)")
+                logger.error(f"[TalkingPerson] Complete (audio-only — lip-sync unavailable)")
             
         except Exception as e:
             person.status = "error"
             person.error_message = str(e)
-            print(f"[TalkingPerson] Error: {e}")
+            logger.error(f"[TalkingPerson] Error: {e}")
         
         return person
     

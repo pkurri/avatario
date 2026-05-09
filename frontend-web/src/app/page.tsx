@@ -24,6 +24,9 @@ import {
   Code2,
   BarChart3,
   Layers,
+  Monitor,
+  GitBranch,
+  UserPlus,
 } from "lucide-react";
 
 const NAV_LINKS = [
@@ -226,28 +229,28 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <DesktopWidget className="w-5 h-5 text-blue-400" />
+                    <Monitor className="w-5 h-5 text-blue-400" />
                   </div>
                   <h3 className="text-white font-semibold mb-2">Desktop Widget</h3>
                   <p className="text-neutral-400 text-sm leading-relaxed">A customizable widget that allows you to integrate Avatario's AI capabilities directly into your desktop environment.</p>
                 </div>
                 <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <DigitalTwin className="w-5 h-5 text-blue-400" />
+                    <GitBranch className="w-5 h-5 text-blue-400" />
                   </div>
                   <h3 className="text-white font-semibold mb-2">Digital Twin</h3>
                   <p className="text-neutral-400 text-sm leading-relaxed">A virtual replica of your physical systems, allowing for real-time monitoring and optimization of your operations.</p>
                 </div>
                 <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <RealtimeVoice className="w-5 h-5 text-blue-400" />
+                    <Mic className="w-5 h-5 text-blue-400" />
                   </div>
                   <h3 className="text-white font-semibold mb-2">Realtime Voice</h3>
                   <p className="text-neutral-400 text-sm leading-relaxed">A feature that enables real-time voice interactions with your clients, providing a more human-like experience.</p>
                 </div>
                 <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <PersonaCloner className="w-5 h-5 text-blue-400" />
+                    <UserPlus className="w-5 h-5 text-blue-400" />
                   </div>
                   <h3 className="text-white font-semibold mb-2">Persona Cloner</h3>
                   <p className="text-neutral-400 text-sm leading-relaxed">A feature that allows you to clone and customize existing personas, enabling you to create unique and tailored experiences for your clients.</p>
@@ -544,6 +547,7 @@ export default function LandingPage() {
             </div>
           </div>
         </footer>
+      </section>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 # backend/engine/personas.py
 
+import logging
 import os
 import yaml
 from enum import Enum
@@ -8,6 +9,8 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # CONFIGURATION LOADING
@@ -69,12 +72,11 @@ def load_config() -> AppConfig:
         _config_cache = AppConfig(**data)
         return _config_cache
     except Exception as e:
-        print(f"Error loading config from {config_file}: {e}")
-        # Return default config
+        logger.error("Error loading config from %s: %s", config_file, e)
         return AppConfig(
             vertical="generic",
             personas=[],
-            settings={"app_name": "AI Assistant"}
+            settings={"app_name": "AI Assistant"},
         )
 
 def reload_config() -> AppConfig:
