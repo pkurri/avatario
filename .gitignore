@@ -1,0 +1,9 @@
+.aider*
+.env
+backend/.env
+backend/__pycache__/
+backend/engine/__pycache__/
+backend/data/
+.claude/
+.devin/
+.windsurf/

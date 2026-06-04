@@ -38,7 +38,11 @@ async def sarvam_stt(audio_bytes: bytes) -> Optional[str]:
         print(f"Sarvam STT Error: {e}")
         return None
 
-async def sarvam_tts(text: str, role: str = "client") -> Optional[bytes]:
+async def sarvam_tts(
+    text: str,
+    role: str = "client",
+    target_language_code: str = "hi-IN",
+) -> Optional[bytes]:
     """
     Sends text to Sarvam's Text-to-Speech API.
     Returns the decoded binary audio bytes.
@@ -51,14 +55,16 @@ async def sarvam_tts(text: str, role: str = "client") -> Optional[bytes]:
         "Content-Type": "application/json"
     }
     
-    # Map roles to Sarvam voice models for bulbul:v2
-    # Client role -> Female voice
-    # Lawyer/advisor role -> Male voice
-    speaker = "anushka" if role == "client" else "abhilash"
-    
+    speaker_map = {
+        "client": "anushka",
+        "lawyer": "abhilash",
+        "advisor": "abhilash",
+    }
+    speaker = speaker_map.get(role, role or "anushka")
+
     payload = {
         "inputs": [text],
-        "target_language_code": "hi-IN",
+        "target_language_code": target_language_code,
         "speaker": speaker,
         "enable_preprocessing": True,
         "skip_preflight": True

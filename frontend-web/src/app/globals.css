@@ -1,26 +1,174 @@
 @import "tailwindcss";
 
+/* ─── Chambers design tokens ─────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* surfaces — warm ink */
+  --ink:         #0c0b0e;
+  --ink-soft:    #100f13;
+  --panel:       #141318;
+  --panel-2:     #1a181f;
+  --raise:       #211f27;
+
+  /* foreground — warm ivory */
+  --ivory:       #f3efe6;
+  --ivory-dim:   #cfc9bd;
+  --muted:       #938d82;
+  --muted-2:     #6a655c;
+  --muted-3:     #4a463f;
+
+  /* hairlines */
+  --line-faint:  rgba(243, 239, 230, 0.06);
+  --line:        rgba(243, 239, 230, 0.11);
+  --line-strong: rgba(243, 239, 230, 0.18);
+
+  /* base accents */
+  --brass:        #c9a24a;
+  --brass-bright: #dcb863;
+  --blue:         #6a93ff;
+  --blue-bright:  #8fb0ff;
+  --emerald:      #46cf99;
+  --rose:         #f0664f;
+
+  /* switchable signature accent (default: brass) */
+  --accent:        var(--brass);
+  --accent-bright: var(--brass-bright);
+  --accent-tint:   color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-line:   color-mix(in srgb, var(--accent) 38%, transparent);
+
+  /* typography */
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-sans:    var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--ink);
+  --color-foreground: var(--ivory);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Base ───────────────────────────────────────────────────────────── */
+html { color-scheme: dark; scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--ink);
+  color: var(--ivory);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ─── Animations ─────────────────────────────────────────────────────── */
+@keyframes av-ping {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes av-wv {
+  to { height: var(--wv-h, 16px); opacity: 0.9; }
+}
+
+@keyframes av-pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ─── Live-console widget ────────────────────────────────────────────── */
+.av-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--emerald);
+  position: relative;
+  flex: none;
+  display: inline-block;
+}
+.av-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--emerald);
+  animation: av-ping 2s ease-out infinite;
+}
+
+.av-avatar-ring {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  animation: av-ping 2.4s ease-out infinite;
+  pointer-events: none;
+}
+
+.av-wave-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--blue);
+  height: 5px;
+  animation: av-wv 1s ease-in-out infinite alternate;
+}
+
+/* thread mask */
+.av-thread-mask {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22px);
+          mask-image: linear-gradient(180deg, transparent 0, #000 22px);
+}
+
+/* ─── Range input thumb (accent-driven) ─────────────────────────────── */
+input[type="range"].av-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line-strong);
+  outline: none;
+}
+input[type="range"].av-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--ink);
+  box-shadow: 0 0 0 1px var(--accent-line);
+  cursor: pointer;
+}
+input[type="range"].av-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--ink);
+  cursor: pointer;
+}
+
+/* ─── Page-level radial glow ─────────────────────────────────────────── */
+.av-page-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px 520px at 78% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(700px 500px at 6% 4%, rgba(106,147,255,0.05), transparent 70%);
+}
+
+/* ─── FAQ accordion ─────────────────────────────────────────────────── */
+.av-faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.av-faq-answer.open {
+  max-height: 400px;
 }

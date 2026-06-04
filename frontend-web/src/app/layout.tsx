@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
+import { DemoUserProvider } from "@/hooks/useDemoUser";
+import DesktopWidget from "@/components/DesktopWidget";
+import { DemoLogin } from "@/components/DemoLogin";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,9 +15,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  display: "swap",
+  style: ["normal", "italic"],
+  weight: ["400", "500", "600"],
+});
+
 export const metadata: Metadata = {
-  title: "Avatario — AI Human Assistant Platform",
-  description: "Industry-agnostic AI human assistant platform. Deploy AI personas across legal, healthcare, finance, education and more. Voice-first, multilingual, with talking avatar support.",
+  title: "Avatario — The AI receptionist that answers your client calls",
+  description:
+    "Avatario receives and answers client calls and messages 24/7 — booking appointments, qualifying enquiries, routing urgent cases and following up. Voice-first, multilingual, in English and 9 Indian languages.",
 };
 
 export default function RootLayout({
@@ -25,9 +37,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased`}
       >
-        {children}
+        <DemoUserProvider>
+          {children}
+          <DemoLogin />
+          {/* Floating Desktop Widget - appears on all pages */}
+          <DesktopWidget />
+        </DemoUserProvider>
       </body>
     </html>
   );

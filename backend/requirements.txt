@@ -1,8 +1,11 @@
 fastapi
 uvicorn[standard]
+aiofiles
+aiohttp
 langchain
 langgraph
 langchain-community
+langchain-text-splitters
 pydantic
 python-dotenv
 websockets

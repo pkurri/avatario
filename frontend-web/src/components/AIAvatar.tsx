@@ -253,22 +253,9 @@ export function AIAvatar({
   // Use realistic human avatar by default, fallback to animated
   const avatarType = config.avatarType || 'realistic';
 
-  if (avatarType === 'realistic') {
-    return (
-      <RealisticHumanAvatar
-        config={config}
-        isSpeaking={isSpeaking}
-        isListening={isListening}
-        audioLevel={audioLevel}
-        size={size}
-        className={className}
-      />
-    );
-  }
-
   // Original animated avatar implementation
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const stateRef = useRef({
     blinkTimer: 0,
     isBlinking: false,
@@ -289,7 +276,7 @@ export function AIAvatar({
     return stateRef.current.lastAudioLevel;
   }, [audioLevel, isSpeaking]);
 
-  const drawAvatar = useCallback(() => {
+  const drawAvatar = useCallback(function animateAvatar() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -367,10 +354,12 @@ export function AIAvatar({
       drawSpeakingIndicator(ctx, centerX, centerY, scale, state.time, smoothedAudio);
     }
 
-    animationRef.current = requestAnimationFrame(drawAvatar);
+    animationRef.current = requestAnimationFrame(animateAvatar);
   }, [config, isSpeaking, isListening, size, verticalStyle, skinColor, getSmoothedAudioLevel]);
 
   useEffect(() => {
+    if (avatarType !== 'animated') return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -384,7 +373,20 @@ export function AIAvatar({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [drawAvatar, size]);
+  }, [avatarType, drawAvatar, size]);
+
+  if (avatarType === 'realistic') {
+    return (
+      <RealisticHumanAvatar
+        config={config}
+        isSpeaking={isSpeaking}
+        isListening={isListening}
+        audioLevel={audioLevel}
+        size={size}
+        className={className}
+      />
+    );
+  }
 
   return (
     <canvas

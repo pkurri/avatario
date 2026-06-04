@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIn
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, Easing } from 'react-native-reanimated';
 import { Mic, Square } from 'lucide-react-native';
 import { LiveKitRoom, useRoomContext, AudioSession } from '@livekit/react-native';
+import { apiUrl } from '../config/api';
 
 const { width } = Dimensions.get('window');
 
@@ -137,7 +138,11 @@ export default function VoiceScreen() {
       AudioSession.startAudioSession();
       
       // Fetch LiveKit connection details from FastAPI Backend
-      fetch(`http://localhost:8000/get_livekit_token?participant_name=mobile_client&room_name=avatario-${selectedPersonaId}&role=${selectedPersonaId}`)
+      fetch(apiUrl('/get_livekit_token', {
+        participant_name: 'mobile_client',
+        room_name: `avatario-${selectedPersonaId}`,
+        role: selectedPersonaId,
+      }))
         .then(res => res.json())
         .then(data => {
           setToken(data.token);
@@ -156,7 +161,7 @@ export default function VoiceScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Avatario</Text>
-        <Text style={styles.subtitle}>Who would you like to consult today?</Text>
+        <Text style={styles.subtitle}>Start a LiveKit voice or video call with an AI persona.</Text>
         
         {personas.map(p => (
            <TouchableOpacity 
@@ -190,7 +195,7 @@ export default function VoiceScreen() {
       token={token}
       connect={true}
       audio={true}
-      video={false}
+      video={true}
     >
       <VoiceAssistantUI 
         selectedPersona={selectedPersona} 

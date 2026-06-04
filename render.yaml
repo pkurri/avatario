@@ -19,7 +19,7 @@ services:
       - key: AVATARIO_DATA_DIR
         value: /var/data
       - key: CORS_ALLOW_ORIGINS
-        value: https://avatario.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+        value: https://avatario.vercel.app,https://avatario-pkurris-projects.vercel.app,https://avatario-git-main-pkurris-projects.vercel.app,http://localhost:3000,http://127.0.0.1:3000
       - key: VLLM_API_KEY
         sync: false
       - key: VLLM_API_BASE

@@ -1,549 +1,1055 @@
 // frontend-web/src/app/page.tsx
+// "Chambers" redesign — warm ink + ivory, editorial serif, brass accent.
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AudioLines,
   Mic,
-  Scale,
   Brain,
   Zap,
-  Globe,
-  Shield,
-  Plus,
-  Minus,
-  ArrowRight,
-  CheckCircle,
-  Users,
-  FileText,
   MessageSquare,
-  Phone,
-  PhoneCall,
-  Database,
+  Globe,
   Code2,
-  BarChart3,
-  Layers,
+  Scale,
+  Stethoscope,
+  Landmark,
+  GraduationCap,
+  Building2,
+  Headphones,
+  Phone,
+  MessageCircle,
+  ArrowRight,
+  Check,
+  Plus,
 } from "lucide-react";
-
-const NAV_LINKS = [
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Use cases", href: "#use-cases" },
-  { label: "Platform", href: "#platform" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "#contact" },
-];
-
-const CAPABILITIES = [
-  { icon: Mic,      title: "Natural conversations",   desc: "Sub-second latency, human-like turn-taking, and graceful interruption handling — even on poor connections." },
-  { icon: Brain,    title: "Tool-aware memory",        desc: "Remembers past conversations, client history and context so every session picks up where the last one left off." },
-  { icon: Zap,      title: "Workflow automation",      desc: "Pre-call enrichment, in-call and post-call actions — defined visually, no developer required." },
-  { icon: MessageSquare, title: "Intelligent routing", desc: "Queue management, voicemail logic and live transfers when a real human is the right answer." },
-  { icon: Globe,    title: "Multi-channel deployment", desc: "One agent, every channel — phone, web widget and direct API. Same brain, same actions." },
-  { icon: Code2,    title: "Full API. No code required", desc: "Visual editor for operators. REST API, webhooks and MCP for engineers. Use both, switch any time." },
-];
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
 
+const NAV_LINKS = [
+  { label: "Capabilities", href: "#capabilities" },
+  { label: "Use cases",    href: "#use-cases" },
+  { label: "Platform",     href: "#platform" },
+  { label: "ROI",          href: "#roi" },
+  { label: "Pricing",      href: "#pricing" },
+  { label: "FAQ",          href: "#faq" },
+];
+
+const DEMO_THREAD = [
+  { from: "client", text: "Hi, I'd like to book an appointment for this week.", time: "0:02", act: null },
+  { from: "ai",     text: "Of course. May I take your name and what it's regarding?", time: "0:04", act: "checking availability" },
+  { from: "client", text: "It's Priya — a first consultation, sometime Thursday if possible.", time: "0:09", act: null },
+  { from: "ai",     text: "Thanks, Priya. Thursday 4 PM is open — I've booked it and sent you a confirmation.", time: "0:13", act: "appointment booked · SMS sent" },
+];
+
+const CAPABILITIES = [
+  { icon: Mic,           title: "Natural conversations",      desc: "Sub-second latency, human-like turn-taking, and graceful interruption handling — even on poor connections." },
+  { icon: Brain,         title: "Tool-aware memory",          desc: "Remembers past conversations, client history and context so every session picks up where the last one left off." },
+  { icon: Zap,           title: "Workflow automation",        desc: "Pre-call enrichment, in-call and post-call actions — defined visually, no developer required." },
+  { icon: MessageSquare, title: "Intelligent routing",        desc: "Queue management, voicemail logic and live transfers when a real human is the right answer." },
+  { icon: Globe,         title: "Multi-channel deployment",   desc: "One agent, every channel — phone, web widget and direct API. Same brain, same actions." },
+  { icon: Code2,         title: "Full API, no code required", desc: "Visual editor for operators. REST API, webhooks and MCP for engineers. Use both, switch any time." },
+];
+
 const USE_CASES = [
-  { icon: Scale,        title: "Law firms",              desc: "Client intake, matter updates, appointment booking — handled before the lawyer picks up." },
-  { icon: FileText,     title: "Legal aid centres",      desc: "Qualify eligibility, explain rights and route clients to the right department automatically." },
-  { icon: Users,        title: "Corporate legal teams",  desc: "Answer routine contract and compliance queries, escalate anything that needs counsel review." },
-  { icon: MessageSquare,title: "Litigation support",     desc: "Court date reminders, document checklist follow-ups, witness scheduling — all automated." },
-  { icon: Phone,        title: "Client helplines",       desc: "Triage inbound queries at scale. Handle 100 simultaneous calls without hold music." },
-  { icon: Globe,        title: "Multi-jurisdiction",     desc: "Localised voice personas for different regions — same platform, different tone and language." },
+  { icon: Scale,         title: "Legal",         desc: "Client intake, matter updates and appointment booking — handled before anyone picks up." },
+  { icon: Stethoscope,   title: "Healthcare",    desc: "Appointment scheduling, triage and reminders for clinics, hospitals and diagnostics." },
+  { icon: Landmark,      title: "Finance",       desc: "KYC, loan and account queries — answered and logged, with a clean handoff for anything sensitive." },
+  { icon: GraduationCap, title: "Education",     desc: "Admissions, fee questions and parent updates — answered in the family's own language." },
+  { icon: Building2,     title: "Real estate",   desc: "Qualify buyers, book site visits and follow up on every enquiry, day or night." },
+  { icon: Headphones,    title: "Support desks", desc: "Triage inbound queries at scale. Handle 100 simultaneous calls without hold music." },
 ];
 
 const PRICING = [
   {
-    name: "Starter", price: "₹4,999", period: "/mo",
-    desc: "Solo practitioners and small firms.",
-    features: ["1 AI voice persona","Up to 500 calls / month","English + 1 regional language","Basic analytics","Email support"],
-    cta: "Get started", highlight: false,
+    name: "Starter",      price: "₹4,999",  per: "/mo",
+    desc: "Solo operators and small teams.",
+    features: ["1 AI voice persona", "Up to 500 calls / month", "English + 1 regional language", "Basic analytics", "Email support"],
+    cta: "Get started",    hi: false,
   },
   {
-    name: "Professional", price: "₹14,999", period: "/mo",
-    desc: "Growing firms that need more personas and integrations.",
-    features: ["5 AI voice personas","Up to 2,000 calls / month","All supported languages","CRM & calendar integrations","Advanced analytics","Priority support"],
-    cta: "Start free trial", highlight: true,
+    name: "Professional", price: "₹14,999", per: "/mo",
+    desc: "Growing teams that need more personas and integrations.",
+    features: ["5 AI voice personas", "Up to 2,000 calls / month", "All supported languages", "CRM & calendar integrations", "Advanced analytics", "Priority support"],
+    cta: "Start free trial", hi: true,
   },
   {
-    name: "Enterprise", price: "Custom", period: "",
-    desc: "Full platform access with dedicated support and custom SLAs.",
-    features: ["Unlimited personas","Unlimited calls","Custom integrations & API","On-premise deployment option","Dedicated success manager","SLA guarantee"],
-    cta: "Contact us", highlight: false,
+    name: "Enterprise",   price: "Custom",  per: "",
+    desc: "Complete access with dedicated support and custom SLAs.",
+    features: ["Unlimited personas", "Unlimited calls", "Custom integrations & API", "On-premise deployment option", "Dedicated success manager", "SLA guarantee"],
+    cta: "Contact us",    hi: false,
   },
 ];
 
 const FAQS = [
-  { q: "How is this different from a chatbot?",    a: "Avatario speaks and listens in real time over voice — not a chat widget. It holds multi-turn conversations, understands context, and takes actions like booking appointments or sending documents." },
-  { q: "Is client data safe?",                     a: "Yes. All data is encrypted in transit and at rest. We never use client conversations to train models. You control retention and can delete data at any time." },
-  { q: "Which languages are supported?",           a: "English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi, Gujarati, and Punjabi — with more being added continuously." },
-  { q: "Can it transfer to a human?",              a: "Yes. You define escalation rules — e.g. 'transfer if the caller mentions bail or urgent hearing'. The AI hands off gracefully and briefs the advocate in real time." },
-  { q: "Can I build advanced workflows?",          a: "Yes. The visual workflow editor lets you define pre-call enrichment, in-call actions, and post-call follow-ups without writing code. REST API and webhooks available for engineers." },
-  { q: "How long does setup take?",                a: "Most teams are live within 48 hours. You provide your practice areas, FAQs, and team availability — we handle the rest." },
+  { id: "chatbot",   q: "How is this different from a chatbot?",  a: "Avatario speaks and listens in real time over voice — not a chat widget. It holds multi-turn conversations, understands context, and takes actions like booking appointments or sending documents." },
+  { id: "safe",      q: "Is client data safe?",                   a: "Yes. All data is encrypted in transit and at rest. We never use your conversations to train models. You control retention and can delete data at any time." },
+  { id: "languages", q: "Which languages are supported?",         a: "English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi, Gujarati, and Punjabi — with more being added continuously." },
+  { id: "transfer",  q: "Can it transfer to a human?",            a: "Yes. You define escalation rules — e.g. 'transfer if the caller mentions an emergency or asks for a manager'. The AI hands off gracefully and briefs your team in real time." },
+  { id: "workflows", q: "Can I build advanced workflows?",        a: "Yes. The visual workflow editor lets you define pre-call enrichment, in-call actions, and post-call follow-ups without writing code. REST API and webhooks available for engineers." },
+  { id: "setup",     q: "How long does setup take?",              a: "Most teams are live within 48 hours. You provide your services, FAQs, and team availability — we handle the rest." },
 ];
 
-const PLATFORM_STEPS = [
-  { n: "01", icon: Brain,    title: "Configure intelligent agents",  desc: "Voice selection, knowledge bases, scripts and reasoning blocks — all from a clean visual editor." },
-  { n: "02", icon: Zap,      title: "Build workflow automation",     desc: "Pre-call, in-call and post-call actions that complete real work, not just log it." },
-  { n: "03", icon: Database, title: "Integrate your systems",        desc: "Webhooks, REST API, 200+ prebuilt tools and SIP trunking — meet your stack where it lives." },
-  { n: "04", icon: Layers,   title: "Deploy across channels",        desc: "Phone, web widget and direct API — one agent, sub-second latency." },
-  { n: "05", icon: BarChart3,title: "Optimise with data",            desc: "Real-time analytics, transcripts and recordings. Spot losing turns and fix them in minutes." },
-  { n: "06", icon: Shield,   title: "Scale with confidence",         desc: "Concurrency, queue handling, smart routing and enterprise integrations — already battle-tested." },
-];
-
-const DEMO_MESSAGES = [
-  { from: "client", text: "Hi, I need urgent advice on a consumer fraud case.", time: "0:02", action: "" },
-  { from: "ai",     text: "I understand. Can you briefly describe what happened?", time: "0:04", action: "routing to Consumer Law" },
-  { from: "client", text: "I paid for a product that was never delivered, three months ago.", time: "0:09", action: "" },
-  { from: "ai",     text: "You have strong grounds under the Consumer Protection Act 2019. I'm booking you a slot with our consumer advocate now.", time: "0:13", action: "appointment booked · SMS sent" },
-];
+// ── CSS VARS SHORTHAND ────────────────────────────────────────────────────────
+const V = {
+  ink:          "var(--ink)",
+  inkSoft:      "var(--ink-soft)",
+  panel:        "var(--panel)",
+  panel2:       "var(--panel-2)",
+  ivory:        "var(--ivory)",
+  ivoryDim:     "var(--ivory-dim)",
+  muted:        "var(--muted)",
+  muted2:       "var(--muted-2)",
+  line:         "var(--line)",
+  lineFaint:    "var(--line-faint)",
+  lineStrong:   "var(--line-strong)",
+  accent:       "var(--accent)",
+  accentBright: "var(--accent-bright)",
+  accentTint:   "var(--accent-tint)",
+  accentLine:   "var(--accent-line)",
+  blue:         "var(--blue)",
+  blueBright:   "var(--blue-bright)",
+  emerald:      "var(--emerald)",
+  displayFont:  "var(--font-display)",
+  monoFont:     "var(--font-mono)",
+  sansFont:     "var(--font-sans)",
+};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
-function FAQItem({ q, a }: { q: string; a: string }) {
+/** Fade-up reveal on scroll */
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, delay, ease: [0.2, 0.7, 0.2, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Max-width content wrapper */
+function Wrap({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 1180,
+        marginInline: "auto",
+        paddingInline: "clamp(20px, 5vw, 56px)",
+        position: "relative",
+        zIndex: 1,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Section eyebrow with leading hairline */
+function Eyebrow({ secNo, label }: { secNo?: string; label: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 10,
+        fontFamily: V.monoFont,
+        fontSize: 11,
+        letterSpacing: "0.26em",
+        textTransform: "uppercase",
+        color: V.muted,
+      }}
+    >
+      <span style={{ width: 22, height: 1, background: V.accentLine, display: "inline-block", flexShrink: 0 }} />
+      {secNo && <span style={{ color: V.accent, fontWeight: 500 }}>{secNo}</span>}
+      {label}
+    </span>
+  );
+}
+
+/** Display heading with shared typographic style */
+function Display({ children, size = "section" }: { children: React.ReactNode; size?: "hero" | "section" | "cta" }) {
+  const fontSize =
+    size === "hero"    ? "clamp(40px, 6.4vw, 76px)" :
+    size === "cta"     ? "clamp(30px, 4.5vw, 52px)" :
+    /* section */        "clamp(30px, 4vw, 47px)";
+  return (
+    <h2
+      style={{
+        margin: "18px 0 0",
+        fontFamily: V.displayFont,
+        fontWeight: 500,
+        letterSpacing: "-0.015em",
+        lineHeight: 1.04,
+        color: V.ivory,
+        fontSize,
+        fontOpticalSizing: "auto" as React.CSSProperties["fontOpticalSizing"],
+      }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+/** Italic accent span */
+function It({ children }: { children: React.ReactNode }) {
+  return <em style={{ fontStyle: "italic", fontWeight: 500, color: V.accentBright }}>{children}</em>;
+}
+
+/** Subhead / lede */
+function Lede({ children, center }: { children: React.ReactNode; center?: boolean }) {
+  return (
+    <p
+      style={{
+        marginTop: 18,
+        color: V.ivoryDim,
+        fontSize: "clamp(16px, 1.4vw, 19px)",
+        lineHeight: 1.65,
+        maxWidth: center ? undefined : "56ch",
+        textAlign: center ? "center" : undefined,
+        marginInline: center ? "auto" : undefined,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+/** Waveform bars */
+function Waveform() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 3, height: 26, flex: 1 }}>
+      {Array.from({ length: 28 }, (_, i) => {
+        const h = 5 + (i % 5) * 4 + Math.round(Math.abs(Math.sin(i)) * 3 + 3);
+        return (
+          <span
+            key={i}
+            className="av-wave-bar"
+            style={{
+              ["--wv-h" as string]: `${h}px`,
+              animationDelay: `${i * 45}ms`,
+              animationDuration: `${700 + (i % 4) * 120}ms`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Pulsing status dot */
+function Dot({ size = 7 }: { size?: number }) {
+  return <span className="av-dot" style={{ width: size, height: size }} />;
+}
+
+/** FAQ accordion item */
+function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className="border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-white/20 transition-colors"
+      style={{ borderBottom: `1px solid ${V.line}`, cursor: "pointer" }}
       onClick={() => setOpen(!open)}
     >
-      <div className="flex items-center justify-between px-6 py-5">
-        <span className="text-white font-medium pr-4">{q}</span>
-        {open ? <Minus className="w-5 h-5 text-blue-400 shrink-0" /> : <Plus className="w-5 h-5 text-neutral-400 shrink-0" />}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 20,
+          padding: "24px 4px",
+          fontSize: 17,
+          fontWeight: 500,
+          color: V.ivory,
+        }}
+      >
+        <span>{q}</span>
+        <span
+          style={{
+            color: V.accent,
+            flexShrink: 0,
+            transition: "transform 0.25s",
+            display: "inline-flex",
+            transform: open ? "rotate(45deg)" : "none",
+          }}
+        >
+          <Plus className="w-5 h-5" />
+        </span>
       </div>
-      {open && <div className="px-6 pb-5 text-neutral-400 text-sm leading-relaxed">{a}</div>}
+      <div className={`av-faq-answer${open ? " open" : ""}`}>
+        <div style={{ padding: "0 48px 26px 4px", color: V.muted, fontSize: 15, lineHeight: 1.7 }}>
+          {a}
+        </div>
+      </div>
     </div>
   );
+}
+
+/** Primary action button */
+function BtnAccent({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 9,
+        fontSize: 14,
+        fontWeight: 600,
+        padding: "13px 22px",
+        borderRadius: 11,
+        background: V.accent,
+        color: "#15130f",
+        border: "1px solid transparent",
+        boxShadow: `0 10px 30px -12px color-mix(in srgb, ${V.accent} 70%, transparent)`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+/** Ghost / outline button */
+function BtnGhost({ href, children, as: Tag = "a" }: { href: string; children: React.ReactNode; as?: "a" | typeof Link }) {
+  const style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 9,
+    fontSize: 14,
+    fontWeight: 500,
+    padding: "13px 22px",
+    borderRadius: 11,
+    border: `1px solid ${V.lineStrong}`,
+    color: V.ivory,
+    background: "transparent",
+    whiteSpace: "nowrap",
+  };
+  if (Tag === Link) return <Link href={href} style={style}>{children}</Link>;
+  return <a href={href} style={style}>{children}</a>;
 }
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const [industry, setIndustry] = useState("Law firm");
-  const [language, setLanguage] = useState("English");
+  // Nav scroll shadow
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 12);
+    fn();
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  // ROI state
+  const [calls,  setCalls]  = useState(800);
+  const [missed, setMissed] = useState(22);
+  const [mval,   setMval]   = useState(3500);
+  const [conv,   setConv]   = useState(18);
+  const recovered = Math.round(calls * (missed / 100) * 0.75);
+  const matters   = Math.max(1, Math.round(recovered * (conv / 100)));
+  const revenue   = matters * mval;
+  const plan      = calls > 2000 ? "Enterprise" : calls > 500 ? "Professional" : "Starter";
+  const fmt       = (n: number) => "₹ " + n.toLocaleString("en-IN");
 
   return (
-    <div className="min-h-screen bg-[#080b12] text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: V.ink,
+        color: V.ivory,
+        fontFamily: V.sansFont,
+        overflowX: "hidden",
+        position: "relative",
+      }}
+    >
+      {/* page radial glow */}
+      <div className="av-page-glow" />
 
-      {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-16 bg-[#080b12]/85 backdrop-blur-lg border-b border-white/6">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <Scale className="w-4 h-4 text-white" />
+      {/* ══════════════════════════════════════════════════ NAV */}
+      <nav
+        style={{
+          position: "fixed",
+          inset: "0 0 auto 0",
+          zIndex: 50,
+          height: 66,
+          display: "flex",
+          alignItems: "center",
+          transition: "background 0.3s, border-color 0.3s, backdrop-filter 0.3s",
+          borderBottom: `1px solid ${scrolled ? V.line : "transparent"}`,
+          background: scrolled ? `color-mix(in srgb, ${V.ink} 78%, transparent)` : "transparent",
+          backdropFilter: scrolled ? "blur(16px) saturate(150%)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(16px) saturate(150%)" : "none",
+        }}
+      >
+        <Wrap style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          {/* brand */}
+          <a href="#top" style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
+            <span
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                display: "grid",
+                placeItems: "center",
+                color: V.accentBright,
+                border: `1px solid ${V.accentLine}`,
+                background: `linear-gradient(160deg, color-mix(in srgb, ${V.accent} 20%, transparent), transparent 70%)`,
+              }}
+            >
+              <AudioLines className="w-[17px] h-[17px]" />
+            </span>
+            <span style={{ fontFamily: V.displayFont, fontSize: 21, fontWeight: 600, letterSpacing: "-0.01em", color: V.ivory }}>
+              Avatario
+            </span>
+          </a>
+
+          {/* links (hidden on mobile) */}
+          <div className="hidden md:flex" style={{ alignItems: "center", gap: 26, marginLeft: "auto" }}>
+            {NAV_LINKS.map((l) => (
+              <a key={l.label} href={l.href} style={{ fontSize: 13.5, color: V.muted, transition: "color 0.16s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = V.ivory; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = V.muted; }}>
+                {l.label}
+              </a>
+            ))}
           </div>
-          <span className="font-bold text-white text-lg tracking-tight">Avatario</span>
-        </div>
-        <div className="hidden md:flex items-center gap-7">
-          {NAV_LINKS.map(l => (
-            <a key={l.label} href={l.href} className="text-sm text-neutral-400 hover:text-white transition-colors">{l.label}</a>
-          ))}
-        </div>
-        <Link href="/assistant" className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors shadow-md shadow-blue-500/20">
-          Book a demo
-        </Link>
+
+          {/* nav CTA */}
+          <a
+            href="#contact"
+            style={{
+              marginLeft: 4,
+              display: "inline-flex",
+              alignItems: "center",
+              fontSize: 14,
+              fontWeight: 500,
+              padding: "11px 20px",
+              borderRadius: 11,
+              border: `1px solid ${V.lineStrong}`,
+              color: V.ivory,
+              background: "transparent",
+              transition: "border-color 0.18s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Book a call
+          </a>
+        </Wrap>
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="relative pt-36 pb-16 flex flex-col items-center text-center px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[700px] bg-blue-700/8 rounded-full blur-[140px] pointer-events-none" />
+      {/* ══════════════════════════════════════════════════ HERO */}
+      <header id="top" style={{ paddingTop: 132, paddingBottom: 88 }}>
+        <Wrap
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.05fr 0.95fr",
+            gap: "clamp(32px, 5vw, 72px)",
+            alignItems: "center",
+          }}
+        >
+          {/* copy */}
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
+          >
+            {/* chip */}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
+                fontFamily: V.monoFont,
+                fontSize: 11.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: V.ivoryDim,
+                padding: "7px 14px 7px 11px",
+                border: `1px solid ${V.line}`,
+                borderRadius: 999,
+                background: V.panel,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Dot /> Live now — answering in 10 Indian languages
+            </span>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/25 bg-blue-500/8 text-blue-400 text-sm mb-7 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-          AI assistant that answers your client calls
-        </motion.div>
+            {/* h1 */}
+            <h1
+              style={{
+                margin: "26px 0 0",
+                fontFamily: V.displayFont,
+                fontWeight: 500,
+                letterSpacing: "-0.015em",
+                lineHeight: 1.04,
+                color: V.ivory,
+                fontSize: "clamp(40px, 6.4vw, 76px)",
+                fontOpticalSizing: "auto" as React.CSSProperties["fontOpticalSizing"],
+              }}
+            >
+              The AI receptionist that
+              <br />
+              <It>answers your client calls.</It>
+            </h1>
 
-        <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}
-          className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-[1.06] text-white">
-          The AI lawyer that{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-            answers your<br />client calls
-          </span>
-        </motion.h1>
+            <Lede>
+              Avatario receives and answers client calls and messages 24/7 —
+              booking appointments, qualifying enquiries, taking messages,
+              routing urgent cases and following up. A complete AI assistant for
+              any team, in English and 9 Indian languages.
+            </Lede>
 
-        <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }}
-          className="mt-6 text-[1.1rem] text-neutral-400 max-w-2xl leading-relaxed">
-          Avatario receives and answers client calls and messages 24/7 — booking consultations,
-          qualifying matters, taking instructions, routing urgent cases and following up.
-          A complete AI advocate, in English and 9 Indian languages.
-        </motion.p>
-
-        {/* ── LIVE DEMO WIDGET ── */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }}
-          className="mt-10 w-full max-w-lg rounded-2xl border border-white/12 bg-[#0f1420] overflow-hidden shadow-2xl text-left">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-white/8">
-            <div className="flex items-center gap-2 text-sm text-white font-medium">
-              <PhoneCall className="w-4 h-4 text-blue-400" />
-              Talk to your AI lawyer live
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 34, alignItems: "center" }}>
+              <BtnAccent href="#contact">Get started <ArrowRight className="w-4 h-4" /></BtnAccent>
+              <BtnGhost href="#platform">Watch a 90-second tour</BtnGhost>
             </div>
-            <span className="text-neutral-500 text-xs">Free, no signup, ends in ~3 min</span>
-          </div>
-          <div className="p-5 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-neutral-500 text-xs uppercase tracking-wider mb-1.5 block">I run a</label>
-                <select value={industry} onChange={e => setIndustry(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[#1a2030] border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 cursor-pointer">
-                  {["Law firm","Legal aid centre","Corporate legal team","Litigation firm","Law school","Solo practice"].map(o => <option key={o}>{o}</option>)}
-                </select>
+            <p style={{ marginTop: 18, fontFamily: V.monoFont, fontSize: 11.5, letterSpacing: "0.04em", color: V.muted2 }}>
+              Free, no signup. Mic permission required for browser call.
+            </p>
+          </motion.div>
+
+          {/* console widget */}
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.2, 0.7, 0.2, 1] }}
+            style={{
+              background: `linear-gradient(180deg, ${V.panel} 0%, ${V.inkSoft} 100%)`,
+              border: `1px solid ${V.line}`,
+              borderRadius: 18,
+              boxShadow: "0 1px 0 rgba(255,255,255,0.03) inset, 0 40px 80px -40px rgba(0,0,0,0.8)",
+              overflow: "hidden",
+            }}
+          >
+            {/* top bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderBottom: `1px solid ${V.line}`, background: "rgba(0,0,0,0.18)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 9, fontSize: 12.5, color: V.ivoryDim }}>
+                <Dot /> Talking to Anya — AI Receptionist
+              </span>
+              <span style={{ marginLeft: "auto", fontFamily: V.monoFont, fontSize: 11, color: V.blueBright, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Zap className="w-3 h-3" /> &lt;500ms
+              </span>
+            </div>
+
+            {/* avatar stage */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 18px", borderBottom: `1px solid ${V.lineFaint}` }}>
+              <div style={{ position: "relative", width: 56, height: 56, borderRadius: "50%", display: "grid", placeItems: "center", fontFamily: V.displayFont, fontSize: 24, fontWeight: 600, color: "#15130f", background: `linear-gradient(150deg, ${V.accentBright}, ${V.accent})`, flexShrink: 0, boxShadow: "0 0 0 4px rgba(243,239,230,0.06)" }}>
+                A
+                <span className="av-avatar-ring" />
               </div>
               <div>
-                <label className="text-neutral-500 text-xs uppercase tracking-wider mb-1.5 block">Language</label>
-                <select value={language} onChange={e => setLanguage(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[#1a2030] border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 cursor-pointer">
-                  {["English","Hindi only","Tamil only","Telugu only","English + Hindi","All languages"].map(o => <option key={o}>{o}</option>)}
-                </select>
+                <div style={{ fontSize: 14, color: V.ivory, fontWeight: 500 }}>Anya</div>
+                <div style={{ fontSize: 12.5, color: V.muted, marginTop: 2 }}>Front-desk intake · Connected</div>
               </div>
             </div>
-            <Link href="/assistant"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white font-semibold text-base transition-all shadow-lg shadow-blue-500/25">
-              <Mic className="w-4 h-4" />
-              Talk to it now in your browser
-            </Link>
-            <p className="text-center text-neutral-500 text-xs">Free, no signup. Mic permission required for browser call.</p>
-          </div>
-        </motion.div>
 
-        {/* ── NEW SECTION ── */}
-        <section className="py-20 px-6 flex justify-center">
-          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1420] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-3 border-t border-white/8 bg-[#0c1019]">
-              <div className="flex items-end gap-0.5 h-5">
-                {[...Array(22)].map((_, i) => (
-                  <motion.div key={i} className="w-[3px] bg-blue-400/50 rounded-full"
-                    animate={{ height: [3, 6 + (i % 4) * 4, 3] }}
-                    transition={{ duration: 0.35 + (i % 3) * 0.15, repeat: Infinity, delay: i * 0.04 }} />
-                ))}
-              </div>
-              <span className="text-neutral-500 text-xs">0:14 · 480ms latency · 1 booking · 1 SMS sent</span>
-            </div>
-            <div className="p-6 space-y-5">
-              <h2 className="text-4xl font-extrabold leading-tight mb-5">Desktop Widget, Digital Twin, Realtime Voice, and Persona Cloner</h2>
-              <p className="text-neutral-400 text-sm leading-relaxed mb-8">Avatario's cutting-edge features enable seamless integration with your existing systems, providing a more comprehensive and efficient experience for your clients.</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <DesktopWidget className="w-5 h-5 text-blue-400" />
+            {/* thread */}
+            <div
+              className="av-thread-mask"
+              style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, maxHeight: 268, overflow: "hidden" }}
+            >
+              {DEMO_THREAD.map((msg, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + i * 0.35, duration: 0.4 }}
+                  style={{ maxWidth: "84%", alignSelf: msg.from === "ai" ? "flex-start" : "flex-end" }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      lineHeight: 1.5,
+                      padding: "11px 14px",
+                      borderRadius: msg.from === "ai" ? "13px 13px 13px 5px" : "13px 13px 5px 13px",
+                      background: msg.from === "ai"
+                        ? V.panel2
+                        : `color-mix(in srgb, ${V.blue} 16%, ${V.panel2})`,
+                      border: `1px solid ${msg.from === "ai" ? V.line : `color-mix(in srgb, ${V.blue} 30%, transparent)`}`,
+                      color: msg.from === "ai" ? V.ivoryDim : V.ivory,
+                    }}
+                  >
+                    {msg.text}
                   </div>
-                  <h3 className="text-white font-semibold mb-2">Desktop Widget</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">A customizable widget that allows you to integrate Avatario's AI capabilities directly into your desktop environment.</p>
-                </div>
-                <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <DigitalTwin className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-white font-semibold mb-2">Digital Twin</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">A virtual replica of your physical systems, allowing for real-time monitoring and optimization of your operations.</p>
-                </div>
-                <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <RealtimeVoice className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-white font-semibold mb-2">Realtime Voice</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">A feature that enables real-time voice interactions with your clients, providing a more human-like experience.</p>
-                </div>
-                <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <PersonaCloner className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-white font-semibold mb-2">Persona Cloner</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">A feature that allows you to clone and customize existing personas, enabling you to create unique and tailored experiences for your clients.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── TRUSTED BY ── */}
-        <div className="py-10 px-6 border-y border-white/5">
-          <p className="text-center text-xs text-neutral-500 uppercase tracking-widest mb-6">Trusted by legal teams across clinics, firms, and corporates</p>
-          <div className="flex flex-wrap items-center justify-center gap-12 text-neutral-600 font-bold text-sm tracking-widest">
-            {["LEXCORP","JUSTICE HUB","VAKIL DESK","LAWBRIDGE","LEXICA","COURTSIDE"].map(b => <span key={b}>{b}</span>)}
-          </div>
-        </div>
-
-        {/* ── CHAT DEMO ── */}
-        <section className="py-20 px-6 flex justify-center">
-          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1420] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-3 border-t border-white/8 bg-[#0c1019]">
-              <div className="flex items-end gap-0.5 h-5">
-                {[...Array(22)].map((_, i) => (
-                  <motion.div key={i} className="w-[3px] bg-blue-400/50 rounded-full"
-                    animate={{ height: [3, 6 + (i % 4) * 4, 3] }}
-                    transition={{ duration: 0.35 + (i % 3) * 0.15, repeat: Infinity, delay: i * 0.04 }} />
-                ))}
-              </div>
-              <span className="text-neutral-500 text-xs">0:14 · 480ms latency · 1 booking · 1 SMS sent</span>
-            </div>
-            <div className="p-6 space-y-5">
-              {DEMO_MESSAGES.map((msg, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.4, duration: 0.4 }}
-                  className={`flex ${msg.from === "ai" ? "justify-end" : "justify-start"}`}>
-                  <div className="flex flex-col gap-1.5 max-w-sm">
-                    <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.from === "ai" ? "bg-blue-600 text-white rounded-br-sm" : "bg-white/10 text-white rounded-bl-sm"}`}>
-                      {msg.text}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-neutral-500 text-xs">{msg.from === "ai" ? "Avatario" : "Caller"} · {msg.time}</span>
-                      {msg.action && <span className="px-2 py-0.5 rounded-full bg-green-500/12 border border-green-500/20 text-green-400 text-xs">+ {msg.action}</span>}
-                    </div>
+                  <div style={{ display: "flex", gap: 9, alignItems: "center", marginTop: 7, fontFamily: V.monoFont, fontSize: 10, color: V.muted2 }}>
+                    <span>{msg.time}</span>
+                    {msg.act && <span style={{ color: V.accent }}>· {msg.act}</span>}
                   </div>
                 </motion.div>
               ))}
             </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-white/8 bg-[#0c1019]">
-              <div className="flex items-end gap-0.5 h-5">
-                {[...Array(22)].map((_, i) => (
-                  <motion.div key={i} className="w-[3px] bg-blue-400/50 rounded-full"
-                    animate={{ height: [3, 6 + (i % 4) * 4, 3] }}
-                    transition={{ duration: 0.35 + (i % 3) * 0.15, repeat: Infinity, delay: i * 0.04 }} />
-                ))}
-              </div>
-              <span className="text-neutral-500 text-xs">0:14 · 480ms latency · 1 booking · 1 SMS sent</span>
-            </div>
-          </div>
-        </section>
 
-        {/* ── CAPABILITIES ── */}
-        <section id="capabilities" className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">Core Capabilities</p>
-              <h2 className="text-4xl md:text-5xl font-extrabold leading-tight">Everything an agent needs to<br />actually finish the job</h2>
-              <p className="mt-4 text-neutral-400 max-w-xl mx-auto">Voice AI that doesn&apos;t just talk — it books, updates, escalates and follows up across your stack.</p>
+            {/* footer */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderTop: `1px solid ${V.line}`, background: "rgba(0,0,0,0.18)" }}>
+              <button
+                aria-label="Microphone"
+                style={{ width: 40, height: 40, borderRadius: "50%", display: "grid", placeItems: "center", background: V.accent, color: "#15130f", border: "none", flexShrink: 0, cursor: "pointer" }}
+              >
+                <Mic className="w-[17px] h-[17px]" />
+              </button>
+              <Waveform />
+              <span style={{ fontFamily: V.monoFont, fontSize: 11, display: "inline-flex", alignItems: "center", gap: 6, color: V.muted2 }}>
+                <Dot size={5} /> Recording
+              </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {CAPABILITIES.map(cap => (
-                <div key={cap.title} className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/30 hover:bg-blue-500/4 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <cap.icon className="w-5 h-5 text-blue-400" />
+          </motion.div>
+
+          {/* mobile: stack columns */}
+          <style>{`@media(max-width:860px){header .wrap-hero{grid-template-columns:1fr!important}}`}</style>
+        </Wrap>
+      </header>
+
+      {/* ══════════════════════════════════════════════════ TRUST */}
+      <section style={{ borderTop: `1px solid ${V.lineFaint}`, borderBottom: `1px solid ${V.lineFaint}`, padding: "26px 0", position: "relative", zIndex: 1 }}>
+        <Wrap style={{ display: "flex", alignItems: "center", gap: "clamp(20px, 4vw, 52px)", flexWrap: "wrap", justifyContent: "center" }}>
+          <span style={{ fontFamily: V.monoFont, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: V.muted2, marginRight: "auto" }}>
+            Trusted by practices across India
+          </span>
+          {["Lexcorp", "Justice Hub", "Vakil Desk", "Lawbridge", "Lexica", "Courtside"].map((b) => (
+            <span key={b} style={{ fontFamily: V.displayFont, fontWeight: 600, fontSize: 16, letterSpacing: "0.02em", color: V.muted }}>
+              {b}
+            </span>
+          ))}
+        </Wrap>
+      </section>
+
+      {/* ══════════════════════════════════════════════════ §01 CAPABILITIES */}
+      <section id="capabilities" style={{ padding: "clamp(72px, 9vw, 116px) 0", position: "relative", zIndex: 1 }}>
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px]">
+            <Eyebrow secNo="§ 01" label="Core capabilities" />
+            <Display>
+              Everything your team needs to <It>handle calls at scale.</It>
+            </Display>
+            <Lede>A complete AI assistant that picks up, qualifies, schedules and follows up — so your people focus on the work that needs them.</Lede>
+          </Reveal>
+
+          <div style={{ borderTop: `1px solid ${V.line}` }}>
+            {CAPABILITIES.map((cap, i) => (
+              <Reveal key={cap.title} delay={i * 0.05}>
+                <div
+                  className="av-feat-row"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "64px 1fr 1.3fr",
+                    gap: 24,
+                    alignItems: "start",
+                    padding: "30px 8px",
+                    borderBottom: `1px solid ${V.line}`,
+                    transition: "background 0.2s",
+                  }}
+                >
+                  <div style={{ fontFamily: V.monoFont, fontSize: 12, color: V.accent, paddingTop: 4 }}>
+                    {String(i + 1).padStart(2, "0")}
                   </div>
-                  <h3 className="text-white font-semibold mb-2">{cap.title}</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">{cap.desc}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 13, fontSize: 19, fontWeight: 500, color: V.ivory }}>
+                    <span
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 9,
+                        display: "grid",
+                        placeItems: "center",
+                        border: `1px solid ${V.line}`,
+                        color: V.accentBright,
+                        background: V.accentTint,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <cap.icon className="w-[17px] h-[17px]" />
+                    </span>
+                    {cap.title}
+                  </div>
+                  <p style={{ margin: 0, color: V.muted, fontSize: 15, lineHeight: 1.6 }}>{cap.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Wrap>
+        <style>{`
+          .av-feat-row:hover{background:rgba(243,239,230,0.02)}
+          @media(max-width:720px){.av-feat-row{grid-template-columns:1fr!important;gap:10px!important}}
+        `}</style>
+      </section>
+
+      {/* ══════════════════════════════════════════════════ §02 USE CASES */}
+      <section
+        id="use-cases"
+        style={{
+          padding: "clamp(72px, 9vw, 116px) 0",
+          background: "rgba(243,239,230,0.015)",
+          borderBlock: `1px solid ${V.lineFaint}`,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px]">
+            <Eyebrow secNo="§ 02" label="Industries served" />
+            <Display>
+              Built for the way Indian businesses <It>actually work.</It>
+            </Display>
+            <Lede>One platform, every industry — legal, healthcare, finance, education and more. Same engine, a persona tuned to your sector.</Lede>
+          </Reveal>
+
+          <Reveal>
+            <div
+              className="av-case-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 1,
+                background: V.line,
+                border: `1px solid ${V.line}`,
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
+            >
+              {USE_CASES.map((uc) => (
+                <div
+                  key={uc.title}
+                  className="av-case-card"
+                  style={{ background: V.ink, padding: "28px 26px", transition: "background 0.2s" }}
+                >
+                  <div style={{ width: 38, height: 38, borderRadius: 10, display: "grid", placeItems: "center", color: V.accentBright, border: `1px solid ${V.line}`, marginBottom: 18 }}>
+                    <uc.icon className="w-[18px] h-[18px]" />
+                  </div>
+                  <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 600, color: V.ivory }}>{uc.title}</h3>
+                  <p style={{ margin: 0, fontSize: 14, color: V.muted, lineHeight: 1.6 }}>{uc.desc}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </Reveal>
+        </Wrap>
+        <style>{`
+          .av-case-card:hover{background:var(--panel)!important}
+          @media(max-width:720px){.av-case-grid{grid-template-columns:1fr!important}}
+          @media(max-width:960px) and (min-width:721px){.av-case-grid{grid-template-columns:repeat(2,1fr)!important}}
+        `}</style>
+      </section>
 
-        {/* ── USE CASES ── */}
-        <section id="use-cases" className="py-24 px-6 bg-white/[0.02]">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">Use Cases</p>
-              <h2 className="text-4xl md:text-5xl font-extrabold leading-tight">
-                One AI receptionist for law firms,<br />legal aid, and corporate teams
-              </h2>
-              <p className="mt-4 text-neutral-400 max-w-xl mx-auto">Avatario adapts to your practice — answers calls, qualifies matters, books consultations and updates your CRM. Same AI, your tone, your hours, your workflows.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {USE_CASES.map(uc => (
-                <div key={uc.title} className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/30 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                    <uc.icon className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-white font-semibold mb-2">{uc.title}</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">{uc.desc}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-center text-neutral-500 text-sm mt-8 italic">...and any practice with a phone — arbitration, IP, family law, tax, notary and more.</p>
-          </div>
-        </section>
+      {/* ══════════════════════════════════════════════════ §03 PLATFORM */}
+      <section id="platform" style={{ padding: "clamp(72px, 9vw, 116px) 0", position: "relative", zIndex: 1 }}>
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px]">
+            <Eyebrow secNo="§ 03" label="Platform" />
+            <Display>
+              Plug into the channels you <It>already pay for.</It>
+            </Display>
+            <Lede>Bring your phone, your WhatsApp, or just embed our web widget. One agent, every channel — same brain, same actions.</Lede>
+          </Reveal>
 
-        {/* ── EVERY CALL ── */}
-        <section className="py-24 px-6">
-          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-4">Every Call</p>
-              <h2 className="text-4xl font-extrabold leading-tight mb-5">Calls that finish,<br />not just answer</h2>
-              <p className="text-neutral-400 leading-relaxed mb-8">Avatario completes the workflow while still on the line — checks your records, searches the knowledge base, books the slot and updates the ticket. No &quot;let me put you on hold.&quot;</p>
-              <div className="space-y-2">
-                {[
-                  ["Incoming call", "Pre-call context"],
-                  ["Intent recognition", "Knowledge base"],
-                  ["Tools & APIs", "Smart actions"],
-                  ["Escalation rules", "Live transfer / SMS"],
-                ].map(([l, r], i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/3 text-sm text-neutral-300 text-center">{l}</div>
-                    <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
-                    <div className="flex-1 px-4 py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 text-sm text-blue-300 text-center">{r}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <Reveal>
+            <div
+              className="av-channels"
+              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22 }}
+            >
               {[
-                { val: "<500ms", label: "Voice response latency" },
-                { val: "10+",    label: "Indian languages" },
-                { val: "24 / 7", label: "Always available" },
-                { val: "100%",   label: "Call coverage, no misses" },
-              ].map(s => (
-                <div key={s.label} className="p-7 rounded-2xl border border-white/8 bg-white/2 text-center">
-                  <div className="text-3xl font-extrabold text-blue-400 mb-1">{s.val}</div>
-                  <div className="text-neutral-400 text-sm">{s.label}</div>
+                { icon: Phone,         title: "Phone",             desc: "Point your number over SIP, Exotel or Twilio. Avatario answers on the first ring, 24/7." },
+                { icon: MessageCircle, title: "WhatsApp Business", desc: "Voice notes and text, handled in the same conversation memory as the phone line." },
+                { icon: Code2,         title: "Web widget & API",  desc: "Embed a live voice widget in one line, or drive everything over REST, webhooks and MCP." },
+              ].map((ch) => (
+                <div
+                  key={ch.title}
+                  style={{ border: `1px solid ${V.line}`, borderRadius: 14, padding: 24, background: V.panel }}
+                >
+                  <div style={{ color: V.accentBright, marginBottom: 16 }}><ch.icon className="w-[22px] h-[22px]" /></div>
+                  <h4 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600, color: V.ivory }}>{ch.title}</h4>
+                  <p style={{ margin: 0, fontSize: 13.5, color: V.muted }}>{ch.desc}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </Reveal>
+        </Wrap>
+        <style>{`@media(max-width:720px){.av-channels{grid-template-columns:1fr!important}}`}</style>
+      </section>
 
-        {/* ── CHANNELS ── */}
-        <section className="py-24 px-6 bg-white/[0.02]">
-          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-            {/* Visual flow */}
-            <div className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] space-y-3">
-              {["Phone / WhatsApp", "Web widget", "Mobile app", "REST / API"].map(ch => (
-                <div key={ch} className="flex items-center gap-3">
-                  <div className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-white/4 text-sm text-neutral-300 text-center">{ch}</div>
-                  <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
-                  <div className="flex-1 px-4 py-3 rounded-xl border border-blue-500/30 bg-blue-600 text-sm text-white text-center font-medium">Avatario agent</div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-4">Channels</p>
-              <h2 className="text-4xl font-extrabold leading-tight mb-5">One agent. Every channel<br />your clients use.</h2>
-              <p className="text-neutral-400 leading-relaxed mb-6">Plug into the channels you already pay for. Bring your phone number, your WhatsApp account, or just embed our web widget — and the same agent handles them all.</p>
-              <ul className="space-y-2.5">
-                {[
-                  "Phone — bring your own number, SIP trunking included",
-                  "WhatsApp Business API — text, voice notes and live calls",
-                  "Web chat & voice widget for your site",
-                  "REST API and webhooks for custom channels",
-                  "Unified dashboard across every channel",
-                ].map(f => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-neutral-300">
-                    <CheckCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />{f}
-                  </li>
+      {/* ══════════════════════════════════════════════════ §04 ROI */}
+      <section
+        id="roi"
+        style={{
+          padding: "clamp(72px, 9vw, 116px) 0",
+          background: "rgba(243,239,230,0.015)",
+          borderBlock: `1px solid ${V.lineFaint}`,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px]">
+            <Eyebrow secNo="§ 04" label="Calculate your ROI" />
+            <Display>
+              See the matters <It>you&rsquo;re missing.</It>
+            </Display>
+            <Lede>Most firms recover 60–80% of missed calls with Avatario. Drop in your numbers below.</Lede>
+          </Reveal>
+
+          <Reveal>
+            <div className="av-roi" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "stretch" }}>
+              {/* inputs */}
+              <div style={{ border: `1px solid ${V.line}`, borderRadius: 18, padding: 30, background: V.panel }}>
+                <h3 style={{ fontFamily: V.monoFont, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: V.muted, margin: "0 0 24px" }}>
+                  Your firm
+                </h3>
+                {([
+                  { label: "Monthly call volume",  val: calls,  set: setCalls,  min: 100,  max: 5000,  step: 50,  display: String(calls) },
+                  { label: "Missed-call rate",     val: missed, set: setMissed, min: 5,    max: 50,    step: 1,   display: missed + "%" },
+                  { label: "Average matter value", val: mval,   set: setMval,  min: 500,  max: 50000, step: 500, display: fmt(mval) },
+                  { label: "Conversion rate",      val: conv,   set: setConv,   min: 2,    max: 60,    step: 1,   display: conv + "%" },
+                ] as Array<{ label: string; val: number; set: (n: number) => void; min: number; max: number; step: number; display: string }>).map((c, i, arr) => (
+                  <label key={c.label} className="block" style={{ marginBottom: i < arr.length - 1 ? 22 : 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, fontSize: 14, color: V.ivoryDim }}>
+                      <span>{c.label}</span>
+                      <b style={{ fontFamily: V.monoFont, fontWeight: 500, color: V.ivory, fontSize: 14 }}>{c.display}</b>
+                    </div>
+                    <input
+                      type="range"
+                      className="av-range"
+                      min={c.min}
+                      max={c.max}
+                      step={c.step}
+                      value={c.val}
+                      onChange={(e) => c.set(Number(e.target.value))}
+                    />
+                  </label>
                 ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+              </div>
 
-        {/* ── PLATFORM ── */}
-        <section id="platform" className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">Platform</p>
-              <h2 className="text-4xl md:text-5xl font-extrabold">Production-ready voice AI</h2>
-              <p className="mt-4 text-neutral-400 max-w-xl mx-auto">Build intelligent agents that handle complex workflows, integrate with your stack and scale from prototype to thousands of calls a day.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {PLATFORM_STEPS.map(s => (
-                <div key={s.n} className="p-6 rounded-2xl border border-white/8 bg-[#0f1420] hover:border-blue-500/25 transition-all">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 text-xs font-bold mb-4">{s.n}</div>
-                  <h3 className="text-white font-semibold mb-2">{s.title}</h3>
-                  <p className="text-neutral-400 text-sm leading-relaxed">{s.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── PRICING ── */}
-        <section id="pricing" className="py-24 px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">Pricing</p>
-              <h2 className="text-4xl font-extrabold">Simple, transparent pricing</h2>
-              <p className="mt-4 text-neutral-400">Start free. Scale as your practice grows.</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-5">
-              {PRICING.map(plan => (
-                <div key={plan.name} className={`relative p-8 rounded-2xl border transition-all ${plan.highlight ? "border-blue-500/50 bg-gradient-to-b from-blue-600/10 to-transparent shadow-xl shadow-blue-500/10" : "border-white/10 bg-white/2 hover:border-white/20"}`}>
-                  {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-blue-600 text-white text-xs font-bold">Most popular</div>}
-                  <h3 className="text-base font-semibold text-white mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-extrabold text-white">{plan.price}</span>
-                    <span className="text-neutral-400 text-sm">{plan.period}</span>
+              {/* outputs */}
+              <div
+                style={{
+                  border: `1px solid ${V.accentLine}`,
+                  borderRadius: 18,
+                  padding: 30,
+                  background: `linear-gradient(165deg, color-mix(in srgb, ${V.accent} 10%, ${V.panel}), ${V.inkSoft})`,
+                }}
+              >
+                <h3 style={{ fontFamily: V.monoFont, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: V.accentBright, margin: "0 0 24px" }}>
+                  Estimated recovery
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, margin: "14px 0 22px" }}>
+                  {[
+                    { n: recovered, l: "calls recovered" },
+                    { n: matters,   l: "new matters / mo" },
+                  ].map((t) => (
+                    <div key={t.l} style={{ border: `1px solid ${V.line}`, borderRadius: 13, padding: 20, background: "rgba(0,0,0,0.2)" }}>
+                      <div style={{ fontFamily: V.displayFont, fontSize: 38, fontWeight: 500, letterSpacing: "-0.02em", color: V.ivory, lineHeight: 1 }}>{t.n}</div>
+                      <div style={{ fontSize: 12.5, color: V.muted, marginTop: 8 }}>{t.l}</div>
+                    </div>
+                  ))}
+                  <div style={{ gridColumn: "1 / -1", border: `1px solid ${V.line}`, borderRadius: 13, padding: 20, background: "rgba(0,0,0,0.2)" }}>
+                    <div style={{ fontFamily: V.displayFont, fontSize: 44, fontWeight: 500, letterSpacing: "-0.02em", color: V.accentBright, lineHeight: 1 }}>{fmt(revenue)}</div>
+                    <div style={{ fontSize: 12.5, color: V.muted, marginTop: 8 }}>added revenue / month</div>
                   </div>
-                  <p className="text-neutral-400 text-sm mb-6">{plan.desc}</p>
-                  <ul className="space-y-2.5 mb-7">
-                    {plan.features.map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-neutral-300">
-                        <CheckCircle className="w-4 h-4 text-blue-400 shrink-0" />{f}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${V.line}`, paddingTop: 18, fontSize: 13, color: V.muted }}>
+                  <span>Recommended plan</span>
+                  <span style={{ fontFamily: V.monoFont, fontSize: 11, letterSpacing: "0.08em", color: V.accentBright, border: `1px solid ${V.accentLine}`, borderRadius: 999, padding: "5px 12px" }}>{plan}</span>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </Wrap>
+        <style>{`@media(max-width:720px){.av-roi{grid-template-columns:1fr!important}}`}</style>
+      </section>
+
+      {/* ══════════════════════════════════════════════════ §05 PRICING */}
+      <section id="pricing" style={{ padding: "clamp(72px, 9vw, 116px) 0", position: "relative", zIndex: 1 }}>
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px] mx-auto text-center">
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Eyebrow secNo="§ 05" label="Plans" />
+            </div>
+            <Display>
+              Pricing that scales with your <It>call volume.</It>
+            </Display>
+            <Lede center>Start small, upgrade in a click. All plans include unlimited team seats and Indian-language support.</Lede>
+          </Reveal>
+
+          <Reveal>
+            <div className="av-price-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+              {PRICING.map((p) => (
+                <div
+                  key={p.name}
+                  style={{
+                    border: `1px solid ${p.hi ? V.accentLine : V.line}`,
+                    borderRadius: 18,
+                    padding: "32px 28px",
+                    background: p.hi
+                      ? `linear-gradient(180deg, color-mix(in srgb, ${V.accent} 8%, ${V.panel}), ${V.panel})`
+                      : V.panel,
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                    boxShadow: p.hi ? `0 30px 70px -40px color-mix(in srgb, ${V.accent} 50%, transparent)` : "none",
+                  }}
+                >
+                  {p.hi && (
+                    <span style={{ position: "absolute", top: -11, left: 28, fontFamily: V.monoFont, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "#15130f", background: V.accent, padding: "5px 11px", borderRadius: 999 }}>
+                      Most popular
+                    </span>
+                  )}
+                  <div style={{ fontFamily: V.displayFont, fontSize: 23, fontWeight: 600, color: V.ivory }}>{p.name}</div>
+                  <div style={{ fontSize: 13.5, color: V.muted, margin: "6px 0 22px", minHeight: 38 }}>{p.desc}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 24 }}>
+                    <span style={{ fontFamily: V.displayFont, fontSize: 42, fontWeight: 500, letterSpacing: "-0.02em", color: V.ivory }}>{p.price}</span>
+                    <span style={{ fontSize: 14, color: V.muted }}>{p.per}</span>
+                  </div>
+                  <ul style={{ listStyle: "none", margin: "0 0 26px", padding: 0, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+                    {p.features.map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 11, fontSize: 14, color: V.ivoryDim }}>
+                        <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: V.accentBright } as React.CSSProperties} />
+                        {f}
                       </li>
                     ))}
                   </ul>
-                  <Link href="/assistant" className={`block text-center py-3 rounded-xl font-semibold text-sm transition-all ${plan.highlight ? "bg-blue-600 hover:bg-blue-500 text-white" : "border border-white/15 hover:border-white/35 text-white"}`}>
-                    {plan.cta}
-                  </Link>
+                  <a
+                    href="#contact"
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      padding: "13px 22px",
+                      borderRadius: 11,
+                      fontSize: 14,
+                      fontWeight: p.hi ? 600 : 500,
+                      background: p.hi ? V.accent : "transparent",
+                      color: p.hi ? "#15130f" : V.ivory,
+                      border: `1px solid ${p.hi ? "transparent" : V.lineStrong}`,
+                      transition: "filter 0.18s",
+                    }}
+                  >
+                    {p.cta}
+                  </a>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </Reveal>
+        </Wrap>
+        <style>{`@media(max-width:860px){.av-price-grid{grid-template-columns:1fr!important}}`}</style>
+      </section>
 
-        {/* ── FAQ ── */}
-        <section id="faq" className="py-24 px-6 bg-white/[0.02]">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">FAQ</p>
-              <h2 className="text-4xl font-extrabold">Common questions</h2>
+      {/* ══════════════════════════════════════════════════ §06 FAQ */}
+      <section
+        id="faq"
+        style={{
+          padding: "clamp(72px, 9vw, 116px) 0",
+          background: "rgba(243,239,230,0.015)",
+          borderBlock: `1px solid ${V.lineFaint}`,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Wrap>
+          <Reveal className="mb-[52px] max-w-[720px] mx-auto text-center">
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Eyebrow secNo="§ 06" label="Frequently asked" />
             </div>
-            <div className="space-y-2">
-              {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
-            </div>
+            <Display>Common questions</Display>
+          </Reveal>
+          <div style={{ borderTop: `1px solid ${V.line}`, maxWidth: 820, marginInline: "auto" }}>
+            {FAQS.map((f) => <FaqItem key={f.id} q={f.q} a={f.a} />)}
           </div>
-        </section>
+        </Wrap>
+      </section>
 
-        {/* ── CONTACT ── */}
-        <section id="contact" className="py-24 px-6">
-          <div className="max-w-xl mx-auto">
-            <div className="text-center mb-10">
-              <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">Contact</p>
-              <h2 className="text-4xl font-extrabold">Talk to the team</h2>
-              <p className="mt-3 text-neutral-400">Tell us about your practice and what you’d like the agent to do. We usually reply within one business day.</p>
+      {/* ══════════════════════════════════════════════════ CTA BAND */}
+      <section id="contact" style={{ padding: "clamp(72px, 9vw, 116px) 0", textAlign: "center", position: "relative", zIndex: 1 }}>
+        <Wrap>
+          <Reveal>
+            <div
+              style={{
+                border: `1px solid ${V.accentLine}`,
+                borderRadius: 24,
+                padding: "clamp(40px, 6vw, 76px)",
+                background: `linear-gradient(165deg, color-mix(in srgb, ${V.accent} 12%, ${V.panel}), ${V.inkSoft})`,
+                overflow: "hidden",
+              }}
+            >
+              <h2
+                style={{
+                  margin: "0 auto",
+                  fontFamily: V.displayFont,
+                  fontWeight: 500,
+                  letterSpacing: "-0.015em",
+                  lineHeight: 1.04,
+                  color: V.ivory,
+                  fontSize: "clamp(30px, 4.5vw, 52px)",
+                  maxWidth: "16ch",
+                  fontOpticalSizing: "auto" as React.CSSProperties["fontOpticalSizing"],
+                }}
+              >
+                Let your firm <It>never miss a client</It> again.
+              </h2>
+              <p style={{ margin: "22px auto 0", color: V.ivoryDim, fontSize: "clamp(16px, 1.4vw, 19px)", lineHeight: 1.65, maxWidth: "56ch" }}>
+                Most teams are live within 48 hours. Tell us your practice areas and we&rsquo;ll handle the rest.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 34, alignItems: "center", justifyContent: "center" }}>
+                <BtnAccent href="mailto:hello@avatario.in">Book a call <ArrowRight className="w-4 h-4" /></BtnAccent>
+                <BtnGhost href="/assistant" as={Link}>Plan my pilot</BtnGhost>
+              </div>
             </div>
-            <div className="p-8 rounded-2xl border border-white/10 bg-[#0f1420] space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-neutral-400 text-xs mb-1.5 block">Name</label>
-                  <input type="text" placeholder="Your name" className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-blue-500/50" />
-                </div>
-                <div>
-                  <label className="text-neutral-400 text-xs mb-1.5 block">Email</label>
-                  <input type="email" placeholder="you@firm.com" className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-blue-500/50" />
-                </div>
-              </div>
-              <div>
-                <label className="text-neutral-400 text-xs mb-1.5 block">Practice type</label>
-                <input type="text" placeholder="e.g. Criminal law firm, 10 lawyers" className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-blue-500/50" />
-              </div>
-              <div>
-                <label className="text-neutral-400 text-xs mb-1.5 block">What should the agent do?</label>
-                <textarea rows={3} placeholder="e.g. Answer inbound calls, qualify bail matters, book consultations..." className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 resize-none" />
-              </div>
-              <button className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors">
-                Send message
-              </button>
-            </div>
-          </div>
-        </section>
+          </Reveal>
+        </Wrap>
+      </section>
 
-        {/* ── FOOTER ── */}
-        <footer className="border-t border-white/6 py-10 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
-                <Scale className="w-3.5 h-3.5 text-white" />
+      {/* ══════════════════════════════════════════════════ FOOTER */}
+      <footer style={{ borderTop: `1px solid ${V.line}`, padding: "64px 0 40px", position: "relative", zIndex: 1 }}>
+        <Wrap>
+          <div className="av-footer-top" style={{ display: "grid", gridTemplateColumns: "1.4fr repeat(4, 1fr)", gap: 36 }}>
+            {/* brand */}
+            <div>
+              <a href="#top" style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center", color: V.accentBright, border: `1px solid ${V.accentLine}`, background: `linear-gradient(160deg, color-mix(in srgb, ${V.accent} 20%, transparent), transparent 70%)` }}>
+                  <AudioLines className="w-[17px] h-[17px]" />
+                </span>
+                <span style={{ fontFamily: V.displayFont, fontSize: 21, fontWeight: 600, letterSpacing: "-0.01em", color: V.ivory }}>Avatario</span>
+              </a>
+              <p style={{ fontFamily: V.displayFont, fontStyle: "italic", fontSize: 18, color: V.ivoryDim, margin: "18px 0 0", maxWidth: "26ch" }}>
+                The AI receptionist that answers your client calls.
+              </p>
+            </div>
+            {/* cols */}
+            {[
+              { heading: "Channels",    links: ["Phone (SIP / Exotel / Twilio)", "Web widget", "WhatsApp Business"] },
+              { heading: "Industries",  links: ["Legal · Healthcare", "Finance · Education", "Real estate · Support"] },
+              { heading: "Languages",   links: ["English · हिंदी · தமிழ்", "తెలుగు · ಕನ್ನಡ · മലയാളം", "বাংলা · मराठी · ગુજરાતી · ਪੰਜਾਬੀ"] },
+              { heading: "Get in touch", links: ["hello@avatario.in", "+91 80 4567 0000", "Bengaluru, Karnataka"] },
+            ].map((col) => (
+              <div key={col.heading}>
+                <h5 style={{ fontFamily: V.monoFont, fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", color: V.muted2, margin: "0 0 16px" }}>{col.heading}</h5>
+                {col.links.map((l) => (
+                  <a key={l} className="av-footer-link" style={{ display: "block", fontSize: 13.5, color: V.muted, marginBottom: 11 }}>{l}</a>
+                ))}
               </div>
-              <span className="font-bold text-white">Avatario</span>
-            </div>
-            <p className="text-neutral-500 text-sm">AI Legal Assistant — Not a substitute for professional legal advice.</p>
-            <div className="flex items-center gap-6 text-neutral-500 text-sm">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="mailto:hello@avatario.ai" className="hover:text-white transition-colors">Contact</a>
-            </div>
+            ))}
           </div>
-        </footer>
-    </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginTop: 52, paddingTop: 26, borderTop: `1px solid ${V.lineFaint}`, fontSize: 12, color: V.muted2 }}>
+            <span>© 2025 Avatario Technologies Pvt Ltd</span>
+            <span>Voice-first AI receptionist — English and 9 Indian languages.</span>
+          </div>
+        </Wrap>
+        <style>{`
+          .av-footer-link:hover{color:var(--ivory-dim)!important}
+          @media(max-width:860px){.av-footer-top{grid-template-columns:1fr 1fr!important}}
+          @media(max-width:560px){.av-footer-top{grid-template-columns:1fr!important}}
+        `}</style>
+      </footer>
+    </main>
   );
 }
