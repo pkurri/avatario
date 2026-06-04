@@ -1,3 +1,4 @@
+import logging
 # backend/engine/lipsync_server.py
 """
 Local Lip-Sync API Server (Mac MPS / CPU compatible)
@@ -34,6 +35,8 @@ except ImportError:
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
 import uvicorn
+
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # CONFIG
@@ -333,6 +336,6 @@ async def list_models():
 # ==========================================
 
 if __name__ == "__main__":
-    print(f"[LipSync Server] Starting on port {PORT} (MPS/CPU mode)")
-    print(f"[LipSync Server] OpenCV: {'available' if HAS_CV2 else 'unavailable (using fallback)'}")
+    logger.info(f"[LipSync Server] Starting on port {PORT} (MPS/CPU mode)")
+    logger.error(f"[LipSync Server] OpenCV: {'available' if HAS_CV2 else 'unavailable (using fallback)'}")
     uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
